@@ -1,0 +1,85 @@
+# The whole platform on one machine, for development and demos.
+#
+#   docker compose up --build
+#   docker compose run --rm api python -m app.cli seed-demo
+#
+# Workspace: http://localhost:8080   ·   E-mails (Mailpit): http://localhost:8025   ·   API docs: http://localhost:8080/api/docs
+#
+# Production uses the same images with real secrets, TLS and backups (stage 7).
+
+name: jps
+
+x-backend: &backend
+  build: ./backend
+  restart: unless-stopped
+  environment: &backend-env
+    JPS_ENVIRONMENT: development
+    JPS_DATABASE_URL: postgresql+asyncpg://jps:jps@db:5432/jps
+    JPS_WORKSPACE_URL: http://localhost:8080
+    JPS_COOKIE_SECURE: "false"
+    JPS_EMAIL_BACKEND: smtp
+    JPS_EMAIL_FROM: Demo Journal <no-reply@journal.local>
+    JPS_SMTP_HOST: mailpit
+    JPS_SMTP_PORT: "1025"
+    JPS_SMTP_STARTTLS: "false"
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jps
+      POSTGRES_PASSWORD: jps
+      POSTGRES_DB: jps
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jps -d jps"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Catches every e-mail the platform sends and shows it in a web inbox.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+
+  migrate:
+    build: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment: *backend-env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  worker:
+    <<: *backend
+    command: ["python", "-m", "app.worker"]
+
+  web:
+    build:
+      context: .
+      dockerfile: workspace/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:

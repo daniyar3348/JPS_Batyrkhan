@@ -1,0 +1,23 @@
+body {
+  background-color: var(--mantine-color-gray-0);
+}
+
+.auth-background {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 10%, var(--mantine-color-indigo-1), transparent 45%),
+    radial-gradient(circle at 85% 90%, var(--mantine-color-cyan-1), transparent 40%),
+    var(--mantine-color-gray-0);
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background-color: var(--mantine-color-gray-0);
+}
+
+.pre-wrap {
+  white-space: pre-wrap;
+}
