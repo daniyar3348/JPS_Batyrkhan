@@ -1,6 +1,7 @@
 import type { Capability } from "@jps/api-client";
 import { Anchor, Badge, Card, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from "@mantine/core";
 import {
+  IconChecklist,
   IconClipboardList,
   IconFileText,
   IconLayoutList,
@@ -67,6 +68,13 @@ const ADMIN_TILES: { capability: Capability; to: string; title: string; text: st
     icon: <IconSettings />,
   },
   {
+    capability: "journal.settings.edit",
+    to: "/admin/submission-settings",
+    title: "Submission settings",
+    text: "Checklist for authors, guidelines, limits and similarity checking.",
+    icon: <IconChecklist />,
+  },
+  {
     capability: "sections.manage",
     to: "/admin/sections",
     title: "Sections",
@@ -107,18 +115,16 @@ export function DashboardPage() {
       </Stack>
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
-        {hasRole(me, "author") ? (
-          <Tile icon={<IconFileText />} title="My submissions" soon>
-            Submit a manuscript and follow it through review to publication.
-          </Tile>
-        ) : null}
+        <Tile icon={<IconFileText />} title="My submissions" to="/submissions">
+          Submit a manuscript and follow it through review to publication.
+        </Tile>
         {hasRole(me, "reviewer") ? (
           <Tile icon={<IconMessageCircle />} title="Review requests" soon>
             Invitations to review, deadlines and your submitted reviews.
           </Tile>
         ) : null}
-        {hasRole(me, "editor_in_chief", "section_editor") ? (
-          <Tile icon={<IconStack2 />} title="Editorial queue" soon>
+        {can(me, "submissions.view_all") || hasRole(me, "section_editor") ? (
+          <Tile icon={<IconStack2 />} title="Editorial queue" to="/editorial">
             New submissions, reviews in progress and manuscripts waiting for a decision.
           </Tile>
         ) : null}

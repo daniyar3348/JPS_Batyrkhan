@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, Header, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.concurrency import etag_for, parse_if_match
-from app.core.deps import get_db
+from app.core.config import Settings
+from app.core.deps import get_db, get_settings
 from app.core.errors import Conflict, NotFound
 from app.core.pagination import Page, clamp_limit
 from app.modules.journals.deps import (
@@ -33,6 +34,11 @@ from app.modules.journals.schemas import (
     SectionUpdate,
 )
 from app.modules.journals.service import JournalService
+from app.modules.journals.submission_settings import (
+    SubmissionSettings,
+    SubmissionSettingsOut,
+    submission_settings,
+)
 
 router = APIRouter()
 public_router = APIRouter(tags=["public"])
@@ -67,6 +73,40 @@ async def update_journal(
 
 
 # ---------------------------------------------------------------------- sections
+
+
+@router.get("/journal/submission-settings", tags=["journal"])
+async def get_submission_settings(
+    response: Response,
+    principal: Principal = Depends(get_principal),
+    settings: Settings = Depends(get_settings),
+) -> SubmissionSettingsOut:
+    """How the journal accepts manuscripts. Readable by every signed-in user (the wizard needs it)."""
+    response.headers["ETag"] = etag_for(principal.journal.version)
+    return SubmissionSettingsOut.of(submission_settings(principal.journal), principal.journal, settings)
+
+
+@router.put("/journal/submission-settings", tags=["journal"])
+async def update_submission_settings(
+    data: SubmissionSettings,
+    response: Response,
+    if_match: str | None = Header(default=None),
+    principal: Principal = Depends(require(Capability.JOURNAL_SETTINGS_EDIT)),
+    service: JournalService = Depends(get_journal_service),
+    settings: Settings = Depends(get_settings),
+    db: AsyncSession = Depends(get_db),
+) -> SubmissionSettingsOut:
+    if data.similarity.enabled and settings.similarity_provider == "disabled":
+        raise Conflict(
+            "Similarity checking is not set up on the server, so it cannot be turned on yet.",
+            code="similarity_unavailable",
+        )
+    saved = await service.update_submission_settings(
+        principal.journal, data, expected_version=parse_if_match(if_match), actor=principal.user
+    )
+    await db.commit()
+    response.headers["ETag"] = etag_for(principal.journal.version)
+    return SubmissionSettingsOut.of(saved, principal.journal, settings)
 
 
 @router.get("/sections", tags=["sections"])

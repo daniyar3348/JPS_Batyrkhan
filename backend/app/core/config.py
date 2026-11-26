@@ -8,6 +8,8 @@ from typing import Literal, Self
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEV_SECRET_KEY = "development-only-secret-change-me"  # noqa: S105 - rejected in production
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -54,6 +56,25 @@ class Settings(BaseSettings):
     worker_poll_interval: float = 1.0
     worker_batch_size: int = 10
 
+    # Signs short-lived links (file uploads and downloads with local storage). Must be secret in production.
+    secret_key: SecretStr = SecretStr(DEV_SECRET_KEY)
+
+    # Files: "s3" in production (any S3-compatible service); "local" keeps them on disk for development.
+    storage_backend: Literal["local", "s3"] = "local"
+    storage_local_path: str = "var/storage"
+    s3_endpoint_url: str | None = None
+    s3_region: str = "us-east-1"
+    s3_bucket: str = "jps-files"
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: SecretStr | None = None
+    # "path" suits most S3-compatible services that are not Amazon; "virtual" is Amazon's default.
+    s3_addressing_style: Literal["auto", "path", "virtual"] = "path"
+    upload_url_ttl_seconds: int = 900
+    download_url_ttl_seconds: int = 300
+
+    # Similarity (plagiarism) checking service. "fake" returns made-up scores, for development only.
+    similarity_provider: Literal["disabled", "fake"] = "disabled"
+
     @model_validator(mode="after")
     def _check_production(self) -> Self:
         if self.environment != "production":
@@ -63,6 +84,13 @@ class Settings(BaseSettings):
             problems.append("JPS_COOKIE_SECURE must be true")
         if self.email_backend != "smtp":
             problems.append("JPS_EMAIL_BACKEND must be smtp")
+        secret = self.secret_key.get_secret_value()
+        if secret == DEV_SECRET_KEY or len(secret) < 32:
+            problems.append("JPS_SECRET_KEY must be a random value of at least 32 characters")
+        if self.storage_backend != "s3":
+            problems.append("JPS_STORAGE_BACKEND must be s3")
+        if self.similarity_provider == "fake":
+            problems.append("JPS_SIMILARITY_PROVIDER must not be fake")
         if problems:
             raise ValueError("Unsafe production settings: " + "; ".join(problems))
         return self

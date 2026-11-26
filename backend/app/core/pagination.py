@@ -7,7 +7,7 @@ import json
 from collections.abc import Sequence
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.core.errors import ValidationFailed
 
@@ -18,6 +18,8 @@ T = TypeVar("T")
 
 
 class Page(BaseModel, Generic[T]):  # noqa: UP046 - Pydantic generic models need typing.Generic
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
     items: list[T]
     next_cursor: str | None = None
 

@@ -1,4 +1,4 @@
-import type { Capability } from "@jps/api-client";
+import type { Capability, MeOut } from "@jps/api-client";
 import {
   AppShell,
   Avatar,
@@ -15,12 +15,15 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconBook2,
+  IconChecklist,
   IconChevronDown,
   IconClipboardList,
+  IconFileText,
   IconHome,
   IconLayoutList,
   IconLogout,
   IconSettings,
+  IconStack2,
   IconUser,
   IconUsers,
 } from "@tabler/icons-react";
@@ -28,7 +31,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { api, unwrap } from "../api";
-import { can, useSignedInUser } from "../auth";
+import { can, hasRole, useSignedInUser } from "../auth";
 import { usePublicJournal } from "../journal";
 import { initials } from "../lib/format";
 import { showRequestError } from "../lib/forms";
@@ -39,10 +42,18 @@ interface NavItem {
   label: string;
   icon: ReactNode;
   capability?: Capability;
+  visible?: (me: MeOut) => boolean;
 }
 
 const MAIN_NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: <IconHome size={18} /> },
+  { to: "/submissions", label: "My submissions", icon: <IconFileText size={18} /> },
+  {
+    to: "/editorial",
+    label: "Editorial queue",
+    icon: <IconStack2 size={18} />,
+    visible: (me) => can(me, "submissions.view_all") || hasRole(me, "section_editor"),
+  },
   { to: "/profile", label: "My profile", icon: <IconUser size={18} /> },
 ];
 
@@ -51,6 +62,12 @@ const ADMIN_NAV: NavItem[] = [
     to: "/admin/journal",
     label: "Journal settings",
     icon: <IconSettings size={18} />,
+    capability: "journal.settings.edit",
+  },
+  {
+    to: "/admin/submission-settings",
+    label: "Submission settings",
+    icon: <IconChecklist size={18} />,
     capability: "journal.settings.edit",
   },
   {
@@ -77,7 +94,10 @@ export function AppLayout() {
     onError: (error) => showRequestError(error),
   });
 
-  const adminItems = ADMIN_NAV.filter((item) => !item.capability || can(me, item.capability));
+  const allowed = (item: NavItem) =>
+    (!item.capability || can(me, item.capability)) && (!item.visible || item.visible(me));
+  const mainItems = MAIN_NAV.filter(allowed);
+  const adminItems = ADMIN_NAV.filter(allowed);
   const isActive = (to: string) =>
     to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
   const renderItem = (item: NavItem) => (
@@ -149,7 +169,7 @@ export function AppLayout() {
 
       <AppShell.Navbar p="sm">
         <AppShell.Section grow component={ScrollArea}>
-          <Stack gap={2}>{MAIN_NAV.map(renderItem)}</Stack>
+          <Stack gap={2}>{mainItems.map(renderItem)}</Stack>
           {adminItems.length > 0 ? (
             <>
               <Text size="xs" fw={700} c="dimmed" tt="uppercase" mt="lg" mb={6} px="sm">

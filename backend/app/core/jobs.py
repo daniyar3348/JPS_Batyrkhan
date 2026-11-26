@@ -14,6 +14,7 @@ import random
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from functools import cached_property
 from typing import Any
 
 from sqlalchemy import Index, Integer, String, Text, delete, func, select, text, update
@@ -23,6 +24,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import Settings
 from app.core.db import Base, id_column, utcnow
+from app.core.storage import Storage, create_storage
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +60,14 @@ class JobContext:
     session_factory: async_sessionmaker[AsyncSession]
     settings: Settings
 
+    @cached_property
+    def storage(self) -> Storage:
+        return create_storage(self.settings)
+
 
 Handler = Callable[[JobContext, dict[str, Any]], Awaitable[None]]
+# Called once a job has failed its last attempt, so the record it works on does not stay "in progress".
+GiveUpHandler = Callable[[JobContext, dict[str, Any], str], Awaitable[None]]
 
 
 @dataclass(frozen=True)
@@ -67,6 +75,7 @@ class TaskSpec:
     name: str
     handler: Handler
     max_attempts: int
+    on_give_up: GiveUpHandler | None = None
 
 
 @dataclass(frozen=True)
@@ -80,11 +89,13 @@ _TASKS: dict[str, TaskSpec] = {}
 _PERIODIC: list[PeriodicSpec] = []
 
 
-def task(name: str, *, max_attempts: int = 5) -> Callable[[Handler], Handler]:
+def task(
+    name: str, *, max_attempts: int = 5, on_give_up: GiveUpHandler | None = None
+) -> Callable[[Handler], Handler]:
     def register(handler: Handler) -> Handler:
         if name in _TASKS and _TASKS[name].handler is not handler:
             raise RuntimeError(f"Task {name!r} is already registered")
-        _TASKS[name] = TaskSpec(name, handler, max_attempts)
+        _TASKS[name] = TaskSpec(name, handler, max_attempts, on_give_up)
         return handler
 
     return register
@@ -250,6 +261,8 @@ class Worker:
                 values |= {"status": "queued", "run_at": utcnow() + retry_delay(job.attempts)}
             async with self.ctx.session_factory() as db, db.begin():
                 await db.execute(update(Job).where(Job.id == job.id).values(**values))
+            if final and spec is not None and spec.on_give_up is not None:
+                await self._give_up(spec.on_give_up, job, values["last_error"])
         else:
             async with self.ctx.session_factory() as db, db.begin():
                 await db.execute(
@@ -257,6 +270,12 @@ class Worker:
                     .where(Job.id == job.id)
                     .values(status="succeeded", finished_at=utcnow(), locked_at=None, last_error=None)
                 )
+
+    async def _give_up(self, handler: GiveUpHandler, job: _Claimed, error: str) -> None:
+        try:
+            await handler(self.ctx, job.payload, error)
+        except Exception:
+            logger.exception("Giving up on a job failed", extra={"job_id": job.id, "task": job.task})
 
 
 @task("core.cleanup_jobs")

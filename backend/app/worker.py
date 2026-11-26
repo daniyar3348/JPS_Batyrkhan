@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import signal
 
-from app import tasks  # noqa: F401 - registers task handlers
+from app import models, tasks  # noqa: F401 - the whole schema, and every task handler
 from app.core.config import get_settings
 from app.core.db import create_engine, create_session_factory
 from app.core.jobs import JobContext, Worker

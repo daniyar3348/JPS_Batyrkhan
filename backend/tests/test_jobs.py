@@ -13,9 +13,14 @@ from app.core.db import utcnow
 from app.core.jobs import Job, JobContext, PeriodicRun, Worker, enqueue, periodic, slot_start, task
 
 CALLS: list[dict[str, Any]] = []
+GAVE_UP: list[tuple[dict[str, Any], str]] = []
 
 
-@task("test.record", max_attempts=3)
+async def note_give_up(ctx: JobContext, payload: dict[str, Any], error: str) -> None:
+    GAVE_UP.append((payload, error))
+
+
+@task("test.record", max_attempts=3, on_give_up=note_give_up)
 async def record(ctx: JobContext, payload: dict[str, Any]) -> None:
     CALLS.append(payload)
     if payload.get("fail"):
@@ -28,6 +33,7 @@ periodic("test.record", every=timedelta(hours=1), payload={"periodic": True})
 @pytest.fixture(autouse=True)
 def reset_calls() -> None:
     CALLS.clear()
+    GAVE_UP.clear()
 
 
 @pytest.fixture
@@ -58,6 +64,7 @@ async def test_failed_jobs_are_retried_then_marked_failed(db: AsyncSession, work
         current = await db.get(Job, job_id)
         assert current is not None and current.attempts == attempt
         if attempt < 3:
+            assert GAVE_UP == []
             assert current.status == "queued"
             assert current.run_at > utcnow()
             assert current.last_error == "RuntimeError: boom"
@@ -66,6 +73,7 @@ async def test_failed_jobs_are_retried_then_marked_failed(db: AsyncSession, work
         else:
             assert current.status == "failed"
             assert current.finished_at is not None
+            assert GAVE_UP == [({"fail": True}, "RuntimeError: boom")]
 
 
 async def test_delayed_jobs_wait(db: AsyncSession, worker: Worker):

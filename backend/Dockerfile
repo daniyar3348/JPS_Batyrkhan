@@ -22,7 +22,8 @@ COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app
 
-RUN useradd --system --uid 10001 --no-create-home jps
+RUN useradd --system --uid 10001 --no-create-home jps \
+    && mkdir -p /app/var/storage && chown -R jps /app/var
 USER jps
 
 ENV PATH="/app/.venv/bin:$PATH"

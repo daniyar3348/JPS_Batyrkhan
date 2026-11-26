@@ -10,12 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_db
 from app.core.errors import Problem
+from app.core.storage_routes import router as storage_router
 from app.modules.audit.router import router as audit_router
 from app.modules.identity.router import router as identity_router
 from app.modules.journals.deps import get_current_journal
 from app.modules.journals.models import Journal
 from app.modules.journals.router import public_router as journals_public_router
 from app.modules.journals.router import router as journals_router
+from app.modules.submissions.router import router as submissions_router
 
 _ERRORS: dict[int | str, dict[str, Any]] = {
     status: {"model": Problem, "description": description}
@@ -41,6 +43,7 @@ def build_router() -> APIRouter:
     workspace.include_router(identity_router)
     workspace.include_router(journals_router)
     workspace.include_router(audit_router)
+    workspace.include_router(submissions_router)
     root.include_router(workspace)
 
     public = APIRouter(prefix="/public/v1", responses=_ERRORS)
@@ -48,6 +51,7 @@ def build_router() -> APIRouter:
     root.include_router(public)
 
     root.include_router(_health_router())
+    root.include_router(storage_router)
     return root
 
 

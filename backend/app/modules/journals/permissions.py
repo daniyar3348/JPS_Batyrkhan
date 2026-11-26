@@ -24,14 +24,17 @@ class Capability(StrEnum):
     USERS_VIEW = "users.view"
     USERS_MANAGE = "users.manage"
     AUDIT_VIEW = "audit.view"
+    SUBMISSIONS_CREATE = "submissions.create"
+    # Every submitted manuscript in the journal. Section editors see their sections' manuscripts instead.
+    SUBMISSIONS_VIEW_ALL = "submissions.view_all"
 
 
 ROLE_CAPABILITIES: dict[Role, frozenset[Capability]] = {
     Role.ADMIN: frozenset(Capability),
-    Role.EDITOR_IN_CHIEF: frozenset({Capability.USERS_VIEW}),
+    Role.EDITOR_IN_CHIEF: frozenset({Capability.USERS_VIEW, Capability.SUBMISSIONS_VIEW_ALL}),
     Role.SECTION_EDITOR: frozenset(),
     Role.REVIEWER: frozenset(),
-    Role.AUTHOR: frozenset(),
+    Role.AUTHOR: frozenset({Capability.SUBMISSIONS_CREATE}),
     Role.COPYEDITOR: frozenset(),
     Role.LAYOUT_EDITOR: frozenset(),
     Role.PROOFREADER: frozenset(),

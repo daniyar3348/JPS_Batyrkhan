@@ -8,6 +8,12 @@ from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.core.storage import Storage
+
+
+def get_storage(request: Request) -> Storage:
+    storage: Storage = request.app.state.storage
+    return storage
 
 
 def get_settings(request: Request) -> Settings:

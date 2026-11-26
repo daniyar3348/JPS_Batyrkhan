@@ -20,6 +20,7 @@ from app.modules.identity.service import IdentityService
 from app.modules.journals.models import Journal, Section, SectionEditor, UserRole
 from app.modules.journals.permissions import ROLE_LABELS, SECTION_EDITOR_ROLES, Role
 from app.modules.journals.schemas import InviteIn, JournalUpdate, SectionCreate, SectionUpdate
+from app.modules.journals.submission_settings import SubmissionSettings, submission_settings
 
 
 class JournalService:
@@ -80,6 +81,29 @@ class JournalService:
         )
         return journal
 
+    async def update_submission_settings(
+        self, journal: Journal, data: SubmissionSettings, *, expected_version: int, actor: User
+    ) -> SubmissionSettings:
+        ensure_version(journal.version, expected_version)
+        before = submission_settings(journal)
+        if data == before:
+            return before
+        # Assign a new dict so SQLAlchemy notices the change to the JSON column.
+        journal.settings = {**journal.settings, "submission": data.model_dump(mode="json")}
+        await self.db.flush()
+        changed = sorted(
+            name for name in SubmissionSettings.model_fields if getattr(data, name) != getattr(before, name)
+        )
+        await self.audit.record(
+            "journal.submission_settings_updated",
+            "journal",
+            journal.id,
+            actor_id=actor.id,
+            journal_id=journal.id,
+            data={"fields": changed},
+        )
+        return data
+
     # ------------------------------------------------------------------ roles
 
     async def roles_of(self, journal_id: int, user_id: int) -> frozenset[Role]:
@@ -87,6 +111,19 @@ class JournalService:
             select(UserRole.role).where(UserRole.journal_id == journal_id, UserRole.user_id == user_id)
         )
         return frozenset(Role(role) for role in rows)
+
+    async def users_with_role(self, journal_id: int, role: Role) -> Sequence[User]:
+        """Active users who hold a role, for example to notify every editor-in-chief."""
+        return (
+            await self.db.scalars(
+                select(User)
+                .join(UserRole, UserRole.user_id == User.id)
+                .where(
+                    UserRole.journal_id == journal_id, UserRole.role == role.value, User.is_active.is_(True)
+                )
+                .order_by(User.id)
+            )
+        ).all()
 
     async def roles_by_user(self, journal_id: int, user_ids: Sequence[int]) -> dict[int, list[Role]]:
         result: dict[int, list[Role]] = {user_id: [] for user_id in user_ids}
@@ -337,9 +374,14 @@ class JournalService:
         return section
 
     async def delete_section(self, journal: Journal, section: Section, *, actor: User) -> None:
-        # Once submissions exist (stage 2), sections that have any will only be deactivated, never deleted.
         await self.db.delete(section)
-        await self.db.flush()
+        try:
+            await self.db.flush()
+        except IntegrityError as exc:  # submissions reference the section (ON DELETE RESTRICT)
+            raise Conflict(
+                "This section has submissions and cannot be deleted. Close it to new submissions instead.",
+                code="section_in_use",
+            ) from exc
         await self.audit.record(
             "section.deleted",
             "section",

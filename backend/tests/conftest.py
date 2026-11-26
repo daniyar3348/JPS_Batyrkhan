@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shutil
 from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -44,9 +45,12 @@ def alembic_config(url: str) -> Config:
 
 
 @pytest.fixture(scope="session")
-def settings() -> Settings:
+def settings(tmp_path_factory: pytest.TempPathFactory) -> Settings:
     return Settings(
         _env_file=None,
+        storage_backend="local",
+        storage_local_path=str(tmp_path_factory.mktemp("storage")),
+        similarity_provider="fake",
         environment="test",
         database_url=TEST_DATABASE_URL,
         email_backend="memory",
@@ -73,11 +77,15 @@ async def app(settings: Settings) -> AsyncIterator[FastAPI]:
 
 
 @pytest.fixture(autouse=True)
-async def clean_database(app: FastAPI) -> AsyncIterator[None]:
+async def clean_database(app: FastAPI, settings: Settings) -> AsyncIterator[None]:
     yield
     async with app.state.engine.begin() as connection:
         await connection.execute(text(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE"))
     MemoryEmailBackend.outbox.clear()
+    # Ids restart with every test, so stored files must go too.
+    storage_root = Path(settings.storage_local_path)
+    if storage_root.exists():
+        shutil.rmtree(storage_root)
 
 
 @pytest.fixture

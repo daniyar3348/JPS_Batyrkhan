@@ -36,6 +36,37 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "profile", element: <ProfilePage /> },
+      // Submission pages are loaded on demand (the wizard brings its own components).
+      {
+        path: "submissions",
+        lazy: async () => ({
+          Component: (await import("./submissions/MySubmissionsPage")).MySubmissionsPage,
+        }),
+      },
+      {
+        path: "submissions/new",
+        lazy: async () => ({
+          Component: (await import("./submissions/NewSubmissionPage")).NewSubmissionPage,
+        }),
+      },
+      {
+        path: "submissions/:id",
+        lazy: async () => ({
+          Component: (await import("./submissions/SubmissionDetailPage")).SubmissionDetailPage,
+        }),
+      },
+      {
+        path: "submissions/:id/edit",
+        lazy: async () => ({
+          Component: (await import("./submissions/SubmissionWizardPage")).SubmissionWizardPage,
+        }),
+      },
+      {
+        path: "editorial",
+        lazy: async () => ({
+          Component: (await import("./submissions/EditorialQueuePage")).EditorialQueuePage,
+        }),
+      },
       {
         // Administration pages are loaded on demand, so most users never download them.
         path: "admin",
@@ -46,6 +77,13 @@ export const router = createBrowserRouter([
             handle: requires("journal.settings.edit"),
             lazy: async () => ({
               Component: (await import("./pages/admin/JournalSettingsPage")).JournalSettingsPage,
+            }),
+          },
+          {
+            path: "submission-settings",
+            handle: requires("journal.settings.edit"),
+            lazy: async () => ({
+              Component: (await import("./pages/admin/SubmissionSettingsPage")).SubmissionSettingsPage,
             }),
           },
           {

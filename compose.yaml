@@ -22,6 +22,14 @@ x-backend: &backend
     JPS_SMTP_HOST: mailpit
     JPS_SMTP_PORT: "1025"
     JPS_SMTP_STARTTLS: "false"
+    JPS_SECRET_KEY: development-only-compose-secret-do-not-use-in-production
+    # Files live on a volume shared by the API and the worker; production uses S3-compatible storage.
+    JPS_STORAGE_BACKEND: local
+    JPS_STORAGE_LOCAL_PATH: /app/var/storage
+    # Scores are made up, so the whole flow can be tried without a similarity service account.
+    JPS_SIMILARITY_PROVIDER: fake
+  volumes:
+    - file-data:/app/var/storage
   depends_on:
     migrate:
       condition: service_completed_successfully
@@ -83,3 +91,4 @@ services:
 
 volumes:
   db-data:
+  file-data:

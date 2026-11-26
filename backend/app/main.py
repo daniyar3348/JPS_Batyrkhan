@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
-from app import tasks  # noqa: F401 - registers background tasks referenced by services
+from app import models, tasks  # noqa: F401 - the whole schema, and the tasks services enqueue
 from app.api import build_router
 from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_session_factory
@@ -16,6 +16,7 @@ from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.security import configure_password_hashing
+from app.core.storage import create_storage
 
 
 def _operation_id(route: APIRoute) -> str:
@@ -51,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
+    app.state.storage = create_storage(settings)
 
     app.add_middleware(RequestContextMiddleware)
     register_exception_handlers(app)
