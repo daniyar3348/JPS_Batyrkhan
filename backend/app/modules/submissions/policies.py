@@ -13,11 +13,22 @@ from app.modules.submissions.models import Submission, SubmissionStatus
 class Access:
     is_author: bool
     is_editor: bool
-    can_edit: bool
+    can_edit: bool  # change the draft
+    # Work on the manuscript as its editor: invite reviewers, discuss, assign editors.
+    can_manage: bool = False
+    # Record decisions. Editors assigned with "recommend only" recommend instead.
+    can_decide: bool = False
 
     @property
     def can_view(self) -> bool:
         return self.is_author or self.is_editor
+
+    @property
+    def recommend_only(self) -> bool:
+        return self.can_manage and not self.can_decide
+
+
+NO_ACCESS = Access(is_author=False, is_editor=False, can_edit=False)
 
 
 def is_author(principal: Principal, submission: Submission) -> bool:
@@ -39,5 +50,14 @@ def access_for(principal: Principal, submission: Submission) -> Access:
     if is_author(principal, submission):
         # An editor never handles their own manuscript as an editor.
         return Access(is_author=True, is_editor=False, can_edit=False)
-    editor = principal.can(Capability.SUBMISSIONS_VIEW_ALL) or is_section_editor(principal, submission)
-    return Access(is_author=False, is_editor=editor, can_edit=False)
+    sees_all = principal.can(Capability.SUBMISSIONS_VIEW_ALL)
+    assignment = submission.participant(principal.user.id)
+    if not (sees_all or assignment is not None or is_section_editor(principal, submission)):
+        return NO_ACCESS
+    return Access(
+        is_author=False,
+        is_editor=True,
+        can_edit=False,
+        can_manage=sees_all or assignment is not None,
+        can_decide=sees_all or (assignment is not None and not assignment.recommend_only),
+    )

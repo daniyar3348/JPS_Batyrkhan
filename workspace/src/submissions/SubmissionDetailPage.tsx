@@ -1,12 +1,45 @@
-import type { SimilarityCheckOut, SubmissionOut } from "@jps/api-client";
-import { Alert, Anchor, Badge, Button, Card, Group, Stack, Table, Text, Title } from "@mantine/core";
-import { IconCircleCheck, IconPencil, IconRefresh } from "@tabler/icons-react";
+import type { DecisionOption, SimilarityCheckOut, SubmissionOut, WorkflowOut } from "@jps/api-client";
+import {
+  Alert,
+  Anchor,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Modal,
+  Stack,
+  Stepper,
+  Table,
+  Tabs,
+  Text,
+  Textarea,
+  Title,
+} from "@mantine/core";
+import {
+  IconAlertCircle,
+  IconCircleCheck,
+  IconFileText,
+  IconHistory,
+  IconMessages,
+  IconPencil,
+  IconRefresh,
+  IconUsersGroup,
+} from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { api, unwrap } from "../api";
 import { PageHeader, QueryState } from "../components/common";
 import { formatDateTime } from "../lib/format";
 import { notifySaved, showRequestError } from "../lib/forms";
+import { AuthorReviews } from "../workflow/AuthorReviews";
+import { DecisionModal } from "../workflow/DecisionModal";
+import { Discussions } from "../workflow/Discussions";
+import { EditorsCard } from "../workflow/EditorsCard";
+import { DecisionsList, EmailLog } from "../workflow/History";
+import { DECISION_LOOK, STAGE_LABELS, STAGES } from "../workflow/labels";
+import { useWorkflow, workflowKey } from "../workflow/queries";
+import { ReviewRounds } from "../workflow/ReviewRounds";
 import { statusLook } from "./labels";
 import { submissionKey, useSubmission } from "./queries";
 import { SubmissionSummaryCards } from "./SubmissionSummaryCards";
@@ -97,10 +130,275 @@ function SimilarityPanel({ submission }: { submission: SubmissionOut }) {
   );
 }
 
+/** The four stages of the editorial process, with where the manuscript is now. */
+function StageProgress({ workflow }: { workflow: WorkflowOut }) {
+  const ended = workflow.status === "declined" || workflow.status === "withdrawn";
+  return (
+    <Stepper
+      active={STAGES.indexOf(workflow.stage as (typeof STAGES)[number])}
+      size="xs"
+      color={ended ? "gray" : undefined}
+    >
+      {STAGES.map((stage) => (
+        <Stepper.Step key={stage} label={STAGE_LABELS[stage]} />
+      ))}
+    </Stepper>
+  );
+}
+
+function DecisionBar({
+  options,
+  onChoose,
+}: {
+  options: DecisionOption[];
+  onChoose: (option: DecisionOption) => void;
+}) {
+  if (options.length === 0) return null;
+  return (
+    <Card withBorder padding="sm">
+      <Group gap="xs">
+        <Text size="sm" fw={600} mr="xs">
+          {options[0]?.is_recommendation ? "Recommend:" : "Decision:"}
+        </Text>
+        {options.map((option) => {
+          const look = DECISION_LOOK[option.decision] ?? { color: "gray", variant: "light" as const };
+          return (
+            <Button
+              key={option.decision}
+              size="sm"
+              color={look.color}
+              variant={look.variant}
+              title={option.description}
+              onClick={() => onChoose(option)}
+            >
+              {option.label}
+            </Button>
+          );
+        })}
+      </Group>
+    </Card>
+  );
+}
+
+/** What is happening with the manuscript, in the authors' terms, and what they need to do. */
+function AuthorStatus({ workflow, onOpenReviews }: { workflow: WorkflowOut; onOpenReviews: () => void }) {
+  const latest = workflow.rounds[workflow.rounds.length - 1];
+  let title: string;
+  let text: string;
+  let color = "blue";
+  let action = false;
+  if (workflow.status === "declined") {
+    [title, text, color] = [
+      "Declined",
+      "The editors have declined the manuscript. Their letter is under Reviews and decisions.",
+      "red",
+    ];
+  } else if (workflow.status === "withdrawn") {
+    [title, text, color] = ["Withdrawn", "You have withdrawn the manuscript.", "gray"];
+  } else if (workflow.stage === "submission") {
+    [title, text] = [
+      "With the editors",
+      "The editors are checking your manuscript before deciding whether to send it for review.",
+    ];
+  } else if (workflow.stage === "review" && latest) {
+    if (latest.status === "revisions_requested" || latest.status === "resubmit_requested") {
+      [title, text, color, action] = [
+        "Revisions requested",
+        "The editor has asked you to revise the manuscript. Read the reviews and send your revision.",
+        "orange",
+        true,
+      ];
+    } else if (latest.status === "revisions_submitted") {
+      [title, text, color] = ["Revision sent", "The editors have your revised manuscript.", "teal"];
+    } else {
+      [title, text] = [
+        `Under review (round ${latest.number})`,
+        "Reviewers are reading your manuscript. We will write when there is a decision.",
+      ];
+    }
+  } else {
+    [title, text, color] = [
+      "Accepted",
+      "Your manuscript has been accepted. We will contact you about copyediting and proofs.",
+      "teal",
+    ];
+  }
+  return (
+    <Alert color={color} title={title} icon={color === "teal" ? <IconCircleCheck /> : <IconAlertCircle />}>
+      <Stack gap="xs" align="flex-start">
+        <Text size="sm">{text}</Text>
+        {action ? (
+          <Button size="xs" color="orange" onClick={onOpenReviews}>
+            Read the reviews and revise
+          </Button>
+        ) : null}
+      </Stack>
+    </Alert>
+  );
+}
+
+function WithdrawButton({ submissionId }: { submissionId: number }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const withdraw = useMutation({
+    mutationFn: () =>
+      unwrap(
+        api.POST("/api/v1/submissions/{submission_id}/withdraw", {
+          params: { path: { submission_id: submissionId } },
+          body: { reason },
+        }),
+      ),
+    onSuccess: (data) => {
+      queryClient.setQueryData(workflowKey(submissionId), data);
+      queryClient.invalidateQueries({ queryKey: submissionKey(submissionId) });
+      queryClient.invalidateQueries({ queryKey: ["submissions"] });
+      notifySaved("The manuscript has been withdrawn");
+      setOpen(false);
+    },
+    onError: (error) => showRequestError(error),
+  });
+  return (
+    <>
+      <Button variant="subtle" color="red" onClick={() => setOpen(true)}>
+        Withdraw
+      </Button>
+      <Modal opened={open} onClose={() => setOpen(false)} title="Withdraw the manuscript?">
+        <Stack>
+          <Text size="sm">
+            The editors and any reviewers will be told. This cannot be undone here; to submit again you would
+            start a new submission.
+          </Text>
+          <Textarea
+            label="Reason"
+            required
+            autosize
+            minRows={3}
+            value={reason}
+            onChange={(e) => setReason(e.currentTarget.value)}
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setOpen(false)}>
+              Keep it
+            </Button>
+            <Button
+              color="red"
+              disabled={!reason.trim()}
+              loading={withdraw.isPending}
+              onClick={() => withdraw.mutate()}
+            >
+              Withdraw
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </>
+  );
+}
+
+function EditorView({ data, workflow }: { data: SubmissionOut; workflow: WorkflowOut }) {
+  const [params, setParams] = useSearchParams();
+  const [deciding, setDeciding] = useState<DecisionOption | null>(null);
+  const tab = params.get("tab") ?? "overview";
+  const reviewing = workflow.rounds
+    .flatMap((r) => r.assignments ?? [])
+    .filter((a) => a.status === "accepted").length;
+  return (
+    <Stack gap="lg">
+      <DecisionBar options={workflow.available_decisions} onChoose={setDeciding} />
+      <Tabs value={tab} onChange={(value) => setParams({ tab: value ?? "overview" }, { replace: true })}>
+        <Tabs.List>
+          <Tabs.Tab value="overview" leftSection={<IconFileText size={16} />}>
+            Manuscript
+          </Tabs.Tab>
+          <Tabs.Tab value="review" leftSection={<IconUsersGroup size={16} />}>
+            Review{workflow.rounds.length ? ` · round ${workflow.rounds.length}` : ""}
+            {reviewing ? ` (${reviewing} reviewing)` : ""}
+          </Tabs.Tab>
+          <Tabs.Tab value="discussions" leftSection={<IconMessages size={16} />}>
+            Discussions{workflow.discussions.length ? ` (${workflow.discussions.length})` : ""}
+          </Tabs.Tab>
+          <Tabs.Tab value="history" leftSection={<IconHistory size={16} />}>
+            History
+          </Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="overview" pt="lg">
+          <Stack gap="lg">
+            <EditorsCard submissionId={data.id} workflow={workflow} />
+            <SimilarityPanel submission={data} />
+            <SubmissionSummaryCards submission={data} />
+          </Stack>
+        </Tabs.Panel>
+        <Tabs.Panel value="review" pt="lg">
+          <ReviewRounds submissionId={data.id} workflow={workflow} />
+        </Tabs.Panel>
+        <Tabs.Panel value="discussions" pt="lg">
+          <Discussions submissionId={data.id} workflow={workflow} />
+        </Tabs.Panel>
+        <Tabs.Panel value="history" pt="lg">
+          <Stack gap="lg">
+            <Card withBorder padding="lg">
+              <Stack gap="sm">
+                <Title order={4}>Decisions</Title>
+                <DecisionsList decisions={workflow.decisions} />
+              </Stack>
+            </Card>
+            {tab === "history" ? <EmailLog submissionId={data.id} /> : null}
+          </Stack>
+        </Tabs.Panel>
+      </Tabs>
+      <DecisionModal submissionId={data.id} option={deciding} onClose={() => setDeciding(null)} />
+    </Stack>
+  );
+}
+
+function AuthorView({ data, workflow }: { data: SubmissionOut; workflow: WorkflowOut }) {
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") ?? "overview";
+  const select = (value: string | null) => setParams({ tab: value ?? "overview" }, { replace: true });
+  return (
+    <Stack gap="lg">
+      <AuthorStatus workflow={workflow} onOpenReviews={() => select("reviews")} />
+      <Tabs value={tab} onChange={select}>
+        <Tabs.List>
+          <Tabs.Tab value="overview" leftSection={<IconFileText size={16} />}>
+            Manuscript
+          </Tabs.Tab>
+          <Tabs.Tab value="reviews" leftSection={<IconUsersGroup size={16} />}>
+            Reviews and decisions
+          </Tabs.Tab>
+          <Tabs.Tab value="discussions" leftSection={<IconMessages size={16} />}>
+            Discussions{workflow.discussions.length ? ` (${workflow.discussions.length})` : ""}
+          </Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="overview" pt="lg">
+          <SubmissionSummaryCards submission={data} />
+        </Tabs.Panel>
+        <Tabs.Panel value="reviews" pt="lg">
+          <Stack gap="lg">
+            <AuthorReviews submissionId={data.id} workflow={workflow} />
+            <Card withBorder padding="lg">
+              <Stack gap="sm">
+                <Title order={4}>Decisions and letters</Title>
+                <DecisionsList decisions={workflow.decisions} forAuthor />
+              </Stack>
+            </Card>
+          </Stack>
+        </Tabs.Panel>
+        <Tabs.Panel value="discussions" pt="lg">
+          <Discussions submissionId={data.id} workflow={workflow} />
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
+  );
+}
+
 export function SubmissionDetailPage() {
   const id = Number(useParams().id);
   const [params] = useSearchParams();
   const submission = useSubmission(id);
+  const submitted = !!submission.data && submission.data.status !== "draft";
+  const workflow = useWorkflow(id, submitted);
 
   if (!submission.data) {
     return (
@@ -134,6 +432,8 @@ export function SubmissionDetailPage() {
             <Button component={Link} to={`/submissions/${id}/edit`} leftSection={<IconPencil size={16} />}>
               Continue editing
             </Button>
+          ) : workflow.data?.can_withdraw ? (
+            <WithdrawButton submissionId={id} />
           ) : null
         }
       />
@@ -143,8 +443,24 @@ export function SubmissionDetailPage() {
           been notified. You will hear from the journal when there is a decision about peer review.
         </Alert>
       ) : null}
-      {data.viewer.is_editor ? <SimilarityPanel submission={data} /> : null}
-      <SubmissionSummaryCards submission={data} />
+      {!submitted ? (
+        <SubmissionSummaryCards submission={data} />
+      ) : !workflow.data ? (
+        <QueryState
+          isPending={workflow.isPending}
+          error={workflow.error}
+          onRetry={() => workflow.refetch()}
+        />
+      ) : (
+        <>
+          <StageProgress workflow={workflow.data} />
+          {data.viewer.is_editor ? (
+            <EditorView data={data} workflow={workflow.data} />
+          ) : (
+            <AuthorView data={data} workflow={workflow.data} />
+          )}
+        </>
+      )}
     </Stack>
   );
 }

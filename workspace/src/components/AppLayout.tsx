@@ -14,14 +14,18 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
+  IconAdjustments,
   IconBook2,
   IconChecklist,
   IconChevronDown,
   IconClipboardList,
   IconFileText,
+  IconForms,
   IconHome,
   IconLayoutList,
   IconLogout,
+  IconMail,
+  IconMessageCheck,
   IconSettings,
   IconStack2,
   IconUser,
@@ -49,6 +53,12 @@ const MAIN_NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: <IconHome size={18} /> },
   { to: "/submissions", label: "My submissions", icon: <IconFileText size={18} /> },
   {
+    to: "/reviews",
+    label: "My reviews",
+    icon: <IconMessageCheck size={18} />,
+    visible: (me) => hasRole(me, "reviewer"),
+  },
+  {
     to: "/editorial",
     label: "Editorial queue",
     icon: <IconStack2 size={18} />,
@@ -68,6 +78,24 @@ const ADMIN_NAV: NavItem[] = [
     to: "/admin/submission-settings",
     label: "Submission settings",
     icon: <IconChecklist size={18} />,
+    capability: "journal.settings.edit",
+  },
+  {
+    to: "/admin/review-settings",
+    label: "Review settings",
+    icon: <IconAdjustments size={18} />,
+    capability: "journal.settings.edit",
+  },
+  {
+    to: "/admin/review-forms",
+    label: "Review forms",
+    icon: <IconForms size={18} />,
+    capability: "journal.settings.edit",
+  },
+  {
+    to: "/admin/email-templates",
+    label: "E-mail templates",
+    icon: <IconMail size={18} />,
     capability: "journal.settings.edit",
   },
   {

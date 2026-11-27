@@ -28,6 +28,10 @@ class Stage:
     PRODUCTION = "production"
 
 
+class ParticipantRole:
+    EDITOR = "editor"  # handles the manuscript: invites reviewers, records decisions
+
+
 class Submission(TimestampMixin, Base):
     """A manuscript's case in the editorial office: where it is, who works on it, what happened."""
 
@@ -59,8 +63,14 @@ class Submission(TimestampMixin, Base):
         order_by="Publication.version",
         cascade="all, delete-orphan",
     )
+    participants: Mapped[list[Participant]] = relationship(
+        lazy="selectin", order_by="Participant.id", cascade="all, delete-orphan"
+    )
 
     __mapper_args__: dict[str, Any] = {"version_id_col": row_version}  # noqa: RUF012
+
+    def participant(self, user_id: int, role: str = ParticipantRole.EDITOR) -> Participant | None:
+        return next((p for p in self.participants if p.user_id == user_id and p.role == role), None)
 
     @property
     def publication(self) -> Publication:
@@ -123,6 +133,27 @@ class Contributor(Base):
     @property
     def full_name(self) -> str:
         return f"{self.given_name} {self.family_name}".strip()
+
+
+class Participant(Base):
+    """A person assigned to work on a manuscript (for now: its editors)."""
+
+    __tablename__ = "submission_participants"
+    __table_args__ = (
+        UniqueConstraint("submission_id", "user_id", "role"),
+        Index("ix_submission_participants_user", "user_id", "submission_id"),
+    )
+
+    id: Mapped[int] = id_column()
+    submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    role: Mapped[str] = mapped_column(String(20))
+    # An editor who may only recommend a decision; the editor-in-chief or another editor records it.
+    recommend_only: Mapped[bool] = mapped_column(default=False, server_default="false")
+    assigned_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow, server_default=func.now())
+
+    user: Mapped[User] = relationship(foreign_keys=[user_id], lazy="selectin")
 
 
 class SubmissionCounter(Base):

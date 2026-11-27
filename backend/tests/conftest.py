@@ -24,7 +24,7 @@ from app.main import create_app
 from app.models import Base
 from app.modules.identity.models import User
 from app.modules.identity.service import IdentityService
-from app.modules.journals.models import Journal
+from app.modules.journals.models import Journal, Section
 from app.modules.journals.permissions import Role
 from app.modules.journals.service import JournalService
 
@@ -196,3 +196,22 @@ def problem(response: Any) -> dict[str, Any]:
     assert response.headers["content-type"].startswith("application/problem+json"), response.text
     body: dict[str, Any] = response.json()
     return body
+
+
+@pytest.fixture
+async def sections(app: FastAPI, journal: Journal) -> dict[str, Section]:
+    async with app.state.session_factory() as db:
+        created = {}
+        for title, abbreviation in (("Research Articles", "ART"), ("Reviews", "REV")):
+            section = Section(journal_id=journal.id, title=title, abbreviation=abbreviation)
+            section.editors = []
+            db.add(section)
+            created[abbreviation] = section
+        await db.commit()
+        return created
+
+
+@pytest.fixture
+async def author(make_user: UserFactory, signed_in: ClientFactory) -> AsyncClient:
+    await make_user("asel@example.org", [Role.AUTHOR], given_name="Asel", family_name="Author")
+    return await signed_in("asel@example.org")

@@ -68,6 +68,10 @@ class Storage(Protocol):
 
     async def put_bytes(self, key: str, data: bytes, *, content_type: str) -> None: ...
 
+    async def get_bytes(self, key: str) -> bytes:
+        """The whole object. Used by the worker for files it must rewrite (e.g. to remove metadata)."""
+        ...
+
     async def delete(self, key: str) -> None: ...
 
 
@@ -189,6 +193,9 @@ class LocalStorage:
 
         return await asyncio.to_thread(run)
 
+    async def get_bytes(self, key: str) -> bytes:
+        return await asyncio.to_thread(self.path(key).read_bytes)
+
     async def put_bytes(self, key: str, data: bytes, *, content_type: str) -> None:
         def write() -> None:
             target = self.path(key)
@@ -288,6 +295,13 @@ class S3Storage:
                 sha.update(chunk)
                 size += len(chunk)
             return ObjectDigest(size=size, sha256=sha.hexdigest(), head=head)
+
+        return await asyncio.to_thread(run)
+
+    async def get_bytes(self, key: str) -> bytes:
+        def run() -> bytes:
+            data: bytes = self.client.get_object(Bucket=self.bucket, Key=check_key(key))["Body"].read()
+            return data
 
         return await asyncio.to_thread(run)
 

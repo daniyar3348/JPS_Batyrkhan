@@ -32,12 +32,14 @@ from app.modules.journals.models import Journal, SectionEditor
 from app.modules.journals.permissions import Capability, Role
 from app.modules.journals.service import JournalService
 from app.modules.journals.submission_settings import SubmissionSettings, submission_settings
-from app.modules.notifications.service import queue_email
 from app.modules.similarity.models import CheckStatus, SimilarityCheck
 from app.modules.similarity.service import SimilarityService
 from app.modules.submissions import emails
+from app.modules.submissions.mailer import Mailer
 from app.modules.submissions.models import (
     Contributor,
+    Participant,
+    ParticipantRole,
     Publication,
     Stage,
     Submission,
@@ -72,6 +74,7 @@ class SubmissionService:
         self.similarity = SimilarityService(db, settings, storage)
         self.journals = JournalService(db, settings)
         self.audit = AuditService(db)
+        self.mailer = Mailer(db, settings)
 
     # ------------------------------------------------------------------ loading
 
@@ -350,6 +353,7 @@ class SubmissionService:
         submission.checklist_confirmed = list(settings.checklist)
         submission.publication.status = "queued"
         await self._link_accounts(submission.publication)
+        self._assign_section_editors(submission)
         await self.db.flush()
 
         await self._notify_submitted(journal, submission)
@@ -381,6 +385,22 @@ class SubmissionService:
         value = (await self.db.execute(statement)).scalar_one()
         return f"{prefix}-{year}-{value:04d}"
 
+    @staticmethod
+    def _assign_section_editors(submission: Submission) -> None:
+        """The section's editors handle a new manuscript, unless they wrote it."""
+        author_emails = {c.email for c in submission.publication.contributors} | {submission.submitter.email}
+        for editor in submission.section.editors:
+            if (
+                editor.is_active
+                and editor.email not in author_emails
+                and submission.participant(editor.id) is None
+            ):
+                participant = Participant(
+                    user_id=editor.id, role=ParticipantRole.EDITOR, recommend_only=False
+                )
+                participant.user = editor
+                submission.participants.append(participant)
+
     async def _link_accounts(self, publication: Publication) -> None:
         unlinked = {c.email: c for c in publication.contributors if c.user_id is None}
         if not unlinked:
@@ -389,14 +409,16 @@ class SubmissionService:
             unlinked[user.email].user_id = user.id
 
     async def _notify_submitted(self, journal: Journal, submission: Submission) -> None:
-        number = submission.number or ""
-        title = submission.publication.title
-        link = f"{self.settings.workspace_url}/submissions/{submission.id}"
         submitter = submission.submitter
-        text = emails.received(
-            name=submitter.full_name, journal_name=journal.name, number=number, title=title, link=link
+        values = {"submitterName": submitter.full_name}
+        await self.mailer.send(
+            journal,
+            emails.RECEIVED.key,
+            submission,
+            to_name=submitter.full_name,
+            to_email=submitter.email,
+            values=values,
         )
-        await queue_email(self.db, to=submitter.email, subject=text.subject, text=text.text)
 
         author_emails = {submitter.email} | {c.email for c in submission.publication.contributors}
         editors = {u.id: u for u in await self.journals.users_with_role(journal.id, Role.EDITOR_IN_CHIEF)}
@@ -404,29 +426,28 @@ class SubmissionService:
         for editor in editors.values():
             if editor.email in author_emails:
                 continue
-            text = emails.new_for_editor(
-                name=editor.full_name,
-                journal_name=journal.name,
-                number=number,
-                title=title,
-                section=submission.section.title,
-                submitter=submitter.full_name,
-                link=link,
+            await self.mailer.send(
+                journal,
+                emails.NEW_FOR_EDITOR.key,
+                submission,
+                to_name=editor.full_name,
+                to_email=editor.email,
+                values=values,
             )
-            await queue_email(self.db, to=editor.email, subject=text.subject, text=text.text)
 
+        notified = {submitter.email}
         for contributor in submission.publication.contributors:
-            if contributor.email == submitter.email:
+            if contributor.email in notified:
                 continue
-            text = emails.coauthor_notice(
-                name=contributor.full_name,
-                journal_name=journal.name,
-                number=number,
-                title=title,
-                submitter=submitter.full_name,
-                contact=journal.contact_email,
+            notified.add(contributor.email)
+            await self.mailer.send(
+                journal,
+                emails.COAUTHOR_NOTICE.key,
+                submission,
+                to_name=contributor.full_name,
+                to_email=contributor.email,
+                values=values,
             )
-            await queue_email(self.db, to=contributor.email, subject=text.subject, text=text.text)
 
     # ------------------------------------------------------------------ similarity (editors)
 
@@ -494,8 +515,13 @@ class SubmissionService:
         q: str | None,
         cursor: str | None,
         limit: int,
+        stage: str | None = None,
+        assigned_to_me: bool = False,
     ) -> tuple[Sequence[Submission], str | None]:
         user = principal.user
+        assigned = select(Participant.submission_id).where(
+            Participant.user_id == user.id, Participant.role == ParticipantRole.EDITOR
+        )
         query = select(Submission).where(
             Submission.journal_id == principal.journal.id,
             Submission.status != SubmissionStatus.DRAFT,
@@ -514,9 +540,13 @@ class SubmissionService:
             if Role.SECTION_EDITOR not in principal.roles:
                 raise Forbidden()
             own_sections = select(SectionEditor.section_id).where(SectionEditor.user_id == user.id)
-            query = query.where(Submission.section_id.in_(own_sections))
+            query = query.where(or_(Submission.section_id.in_(own_sections), Submission.id.in_(assigned)))
+        if assigned_to_me:
+            query = query.where(Submission.id.in_(assigned))
         if status:
             query = query.where(Submission.status == status)
+        if stage:
+            query = query.where(Submission.stage == stage)
         if section_id is not None:
             query = query.where(Submission.section_id == section_id)
         if q and q.strip():
@@ -587,7 +617,7 @@ class SubmissionService:
             publication=PublicationOut.of(submission.publication),
             files=[FileOut.of(f) for f in files],
             problems=problems,
-            viewer=Viewer(is_author=access.is_author, is_editor=access.is_editor, can_edit=access.can_edit),
+            viewer=Viewer.of(access),
             similarity_checks=checks,
         )
 
@@ -615,3 +645,18 @@ def summary_of(
         similarity_score=score,
         similarity_flagged=score is not None and score >= threshold,
     )
+
+
+async def editors_to_notify(journals: JournalService, submission: Submission) -> list[User]:
+    """The manuscript's editors; while nobody is assigned, the editors-in-chief. Never its authors."""
+    author_emails = {c.email for c in submission.publication.contributors} | {submission.submitter.email}
+    editors = [p.user for p in submission.participants if p.role == ParticipantRole.EDITOR]
+    if not editors:
+        editors = list(await journals.users_with_role(submission.journal_id, Role.EDITOR_IN_CHIEF))
+    seen: set[int] = set()
+    result = []
+    for user in editors:
+        if user.is_active and user.email not in author_emails and user.id not in seen:
+            seen.add(user.id)
+            result.append(user)
+    return result

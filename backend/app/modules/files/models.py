@@ -15,6 +15,15 @@ class FileStatus:
     REJECTED = "rejected"  # the contents did not pass the checks
 
 
+class FileStage:
+    """Where in the workflow a file belongs."""
+
+    SUBMISSION = "submission"  # sent by the author with the manuscript
+    REVIEW = "review"  # the copy reviewers of a round receive (author metadata removed)
+    REVISION = "revision"  # revised files the author sends during a review round
+    REVIEW_ATTACHMENT = "review_attachment"  # a reviewer's file sent with their review
+
+
 class SubmissionFile(TimestampMixin, Base):
     """A file of a submission. Its contents are immutable revisions; the newest one is current."""
 
@@ -22,8 +31,16 @@ class SubmissionFile(TimestampMixin, Base):
 
     id: Mapped[int] = id_column()
     submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id", ondelete="CASCADE"), index=True)
-    # Where in the workflow the file belongs (submission, review, copyediting, production...).
+    # Where in the workflow the file belongs: see FileStage.
     file_stage: Mapped[str] = mapped_column(String(30), default="submission", server_default="submission")
+    review_round_id: Mapped[int | None] = mapped_column(
+        ForeignKey("review_rounds.id", ondelete="CASCADE"), index=True
+    )
+    review_assignment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("review_assignments.id", ondelete="CASCADE"), index=True
+    )
+    # For reviewers' copies: the file it was made from.
+    source_file_id: Mapped[int | None] = mapped_column(ForeignKey("submission_files.id", ondelete="SET NULL"))
     genre: Mapped[str] = mapped_column(String(30))
     name: Mapped[str] = mapped_column(String(255))
     uploaded_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
@@ -54,6 +71,9 @@ class FileRevision(Base):
     sha256: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(20), default=FileStatus.PENDING_UPLOAD)
     rejection_reason: Mapped[str | None] = mapped_column(String(300))
+    # For files shown to the other side of a blind review: whether author/reviewer names were removed
+    # from the file's metadata. None when not attempted.
+    metadata_removed: Mapped[bool | None]
     uploaded_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(default=utcnow, server_default=func.now())
     processed_at: Mapped[datetime | None]

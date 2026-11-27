@@ -5,9 +5,23 @@ from app.core.jobs import Job, PeriodicRun
 from app.modules.audit.models import AuditEvent
 from app.modules.files.models import FileRevision, SubmissionFile
 from app.modules.identity.models import AuthSession, Consent, User, UserToken
-from app.modules.journals.models import Journal, Section, SectionEditor, UserRole
+from app.modules.journals.models import EmailTemplate, Journal, Section, SectionEditor, UserRole
+from app.modules.notifications.models import EmailLog
+from app.modules.review.models import ReviewAssignment, ReviewForm, ReviewReminder, ReviewRound
 from app.modules.similarity.models import SimilarityCheck
-from app.modules.submissions.models import Contributor, Publication, Submission, SubmissionCounter
+from app.modules.submissions.models import (
+    Contributor,
+    Participant,
+    Publication,
+    Submission,
+    SubmissionCounter,
+)
+from app.modules.workflow.models import (
+    Discussion,
+    DiscussionMessage,
+    DiscussionParticipant,
+    EditorialDecision,
+)
 
 __all__ = [
     "AuditEvent",
@@ -15,11 +29,22 @@ __all__ = [
     "Base",
     "Consent",
     "Contributor",
+    "Discussion",
+    "DiscussionMessage",
+    "DiscussionParticipant",
+    "EditorialDecision",
+    "EmailLog",
+    "EmailTemplate",
     "FileRevision",
     "Job",
     "Journal",
+    "Participant",
     "PeriodicRun",
     "Publication",
+    "ReviewAssignment",
+    "ReviewForm",
+    "ReviewReminder",
+    "ReviewRound",
     "Section",
     "SectionEditor",
     "SimilarityCheck",

@@ -18,82 +18,11 @@ from app.core.storage import LocalStorage
 from app.modules.files.models import FileRevision, SubmissionFile
 from app.modules.files.service import FileService
 from app.modules.files.types import content_problem
-from app.modules.journals.models import Journal, Section
+from app.modules.journals.models import Section
 from app.modules.journals.permissions import Role
 from app.modules.similarity.providers import FakeSimilarityProvider
 from tests.conftest import ClientFactory, UserFactory, problem
-
-PDF = b"%PDF-1.7\n%test manuscript\n" + b"0" * 2048
-ABSTRACT = "This study examines how editorial workflows affect publication time in regional journals."
-
-
-@pytest.fixture
-async def sections(app: FastAPI, journal: Journal) -> dict[str, Section]:
-    async with app.state.session_factory() as db:
-        created = {}
-        for title, abbreviation in (("Research Articles", "ART"), ("Reviews", "REV")):
-            section = Section(journal_id=journal.id, title=title, abbreviation=abbreviation)
-            section.editors = []
-            db.add(section)
-            created[abbreviation] = section
-        await db.commit()
-        return created
-
-
-@pytest.fixture
-async def author(make_user: UserFactory, signed_in: ClientFactory) -> AsyncClient:
-    await make_user("asel@example.org", [Role.AUTHOR], given_name="Asel", family_name="Author")
-    return await signed_in("asel@example.org")
-
-
-async def upload(
-    http: AsyncClient, submission_id: int, name: str, content: bytes, genre: str = "manuscript"
-) -> dict[str, Any]:
-    ticket = await http.post(
-        f"/api/v1/submissions/{submission_id}/files/uploads",
-        json={"file_name": name, "size": len(content), "genre": genre},
-    )
-    assert ticket.status_code == 201, ticket.text
-    target = ticket.json()["upload"]
-    put = await http.request(target["method"], target["url"], content=content, headers=target["headers"])
-    assert put.status_code == 204, put.text
-    done = await http.post(
-        f"/api/v1/submissions/{submission_id}/files/{ticket.json()['file']['id']}/complete"
-    )
-    assert done.status_code == 200, done.text
-    result: dict[str, Any] = done.json()
-    return result
-
-
-async def complete_draft(
-    http: AsyncClient, section_id: int, run_jobs, title: str = "Editorial workflows"
-) -> dict[str, Any]:
-    """Create a draft that can be submitted."""
-    draft = (await http.post("/api/v1/submissions", json={"section_id": section_id})).json()
-    sid = draft["id"]
-    checklist = (await http.get("/api/v1/journal/submission-settings")).json()["checklist"]
-    await http.patch(
-        f"/api/v1/submissions/{sid}",
-        json={"checklist_confirmed": checklist, "comments_for_editor": "Thank you."},
-        headers={"If-Match": f'"{draft["row_version"]}"'},
-    )
-    await upload(http, sid, "manuscript.pdf", PDF)
-    await run_jobs()
-    current = (await http.get(f"/api/v1/submissions/{sid}")).json()
-    publication = current["publication"]
-    await http.patch(
-        f"/api/v1/submissions/{sid}/publication",
-        json={"title": title, "abstract": ABSTRACT, "keywords": ["peer review", "publishing", "workflow"]},
-        headers={"If-Match": f'"{publication["row_version"]}"'},
-    )
-    first = publication["contributors"][0]
-    await http.patch(
-        f"/api/v1/submissions/{sid}/contributors/{first['id']}", json={"affiliation": "Nazarbayev University"}
-    )
-    ready: dict[str, Any] = (await http.get(f"/api/v1/submissions/{sid}")).json()
-    assert ready["problems"] == [], ready["problems"]
-    return ready
-
+from tests.manuscripts import PDF, complete_draft, upload
 
 # ---------------------------------------------------------------------- drafts
 
@@ -103,7 +32,14 @@ async def test_draft_starts_with_the_submitter_as_corresponding_author(author: A
     assert response.status_code == 201, response.text
     draft = response.json()
     assert draft["status"] == "draft" and draft["number"] is None
-    assert draft["viewer"] == {"is_author": True, "is_editor": False, "can_edit": True}
+    assert draft["viewer"] == {
+        "is_author": True,
+        "is_editor": False,
+        "can_edit": True,
+        "can_manage": False,
+        "can_decide": False,
+        "recommend_only": False,
+    }
     [me] = draft["publication"]["contributors"]
     assert (me["full_name"], me["email"], me["is_corresponding"]) == ("Asel Author", "asel@example.org", True)
     fields = {p["field"] for p in draft["problems"]}
@@ -392,7 +328,8 @@ async def test_submission(
     year = utcnow().year
     assert body["number"] == f"JRN-{year}-0001"
     assert body["status"] == "queued" and body["submitted_at"] is not None
-    assert body["viewer"] == {"is_author": True, "is_editor": False, "can_edit": False}
+    assert body["viewer"]["is_author"] is True
+    assert not any(body["viewer"][k] for k in ("is_editor", "can_edit", "can_manage", "can_decide"))
     assert body["publication"]["contributors"][1]["has_account"] is True
 
     await run_jobs()
@@ -470,7 +407,8 @@ async def test_editors_never_handle_their_own_manuscripts(
     await chief.post(f"/api/v1/submissions/{draft['id']}/submit")
     assert (await chief.get("/api/v1/submissions/editorial")).json()["items"] == []
     view = (await chief.get(f"/api/v1/submissions/{draft['id']}")).json()
-    assert view["viewer"] == {"is_author": True, "is_editor": False, "can_edit": False}
+    assert view["viewer"]["is_author"] is True
+    assert not any(view["viewer"][k] for k in ("is_editor", "can_edit", "can_manage", "can_decide"))
     assert view["similarity_checks"] is None
 
 

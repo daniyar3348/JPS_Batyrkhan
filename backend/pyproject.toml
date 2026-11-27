@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.165.0",
     "pydantic-settings>=2.16.3",
     "pydantic[email]>=2.14.4",
+    "pypdf>=7.2.0",
     "sqlalchemy[asyncio]>=2.1.9",
     "uvicorn[standard]>=0.54.0",
 ]
@@ -77,3 +78,8 @@ name = "Modules do not depend on the API layer"
 type = "forbidden"
 source_modules = ["app.modules"]
 forbidden_modules = ["app.api", "app.main", "app.worker"]
+
+[[tool.importlinter.contracts]]
+name = "Editorial modules are layered: workflow uses review, review uses submissions"
+type = "layers"
+layers = ["app.modules.workflow", "app.modules.review", "app.modules.submissions"]

@@ -17,7 +17,9 @@ from app.modules.journals.deps import get_current_journal
 from app.modules.journals.models import Journal
 from app.modules.journals.router import public_router as journals_public_router
 from app.modules.journals.router import router as journals_router
+from app.modules.review.router import router as review_router
 from app.modules.submissions.router import router as submissions_router
+from app.modules.workflow.router import router as workflow_router
 
 _ERRORS: dict[int | str, dict[str, Any]] = {
     status: {"model": Problem, "description": description}
@@ -44,6 +46,8 @@ def build_router() -> APIRouter:
     workspace.include_router(journals_router)
     workspace.include_router(audit_router)
     workspace.include_router(submissions_router)
+    workspace.include_router(review_router)
+    workspace.include_router(workflow_router)
     root.include_router(workspace)
 
     public = APIRouter(prefix="/public/v1", responses=_ERRORS)

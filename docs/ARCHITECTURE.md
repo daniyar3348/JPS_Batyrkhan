@@ -1,8 +1,31 @@
 # Архитектура платформы научного журнала
 
-Версия 0.5 · 26.11.2026
+Версия 0.6 · 27.11.2026
 
 Система по образцу Open Journal Systems (OJS): ведёт статью от подачи через рецензирование и редактуру до публикации. Отдельный публичный сайт журнала берёт опубликованные материалы из системы через API.
+
+**Что изменилось в версии 0.6** (по итогам этапа 3):
+- **Назначения редакторов** (`Participant`) хранятся в модуле `submissions`, а не в `workflow`: от них зависит, кто видит рукопись, а модуль `submissions` нижний.
+- **Слои модулей** проверяет `import-linter`: `workflow` → `review` → `submissions` (§4). Модули выше пользуются нижними, но не наоборот.
+- **Шаблоны писем.**
+  - Модули регистрируют умолчания, журнал хранит свою редакцию (`email_templates`).
+  - Подстановки проверяются при сохранении. Письма рецензентам не предлагают подстановок с именами авторов, поэтому их нельзя добавить и правкой шаблона (§13).
+- **Журнал писем** (`email_log`) хранит копии писем по рукописи.
+  - Письма учётной записи (сброс пароля, приглашение) с личными ссылками не сохраняются.
+  - Если в письмо по рукописи попадает личная ссылка, она заменяется в копии.
+- **Анонимные копии для рецензентов** и обезличенные файлы рецензентов (§6.5, §11).
+  - Worker удаляет имена из свойств файла DOCX, XLSX, ODT, ODS, PDF и RTF, включая авторов правок и комментариев.
+  - Остальные форматы копируются как есть, и редактор видит предупреждение «проверьте файл».
+- **Приглашение рецензента сохраняет копию вопросов формы.** Изменение формы не меняет то, о чём уже спросили.
+- **Напоминания** отправляет ежечасная задача.
+  - Ключ уникальности — (приглашение, вид, смещение, срок): дубликатов нет, а после переноса срока напоминания снова становятся актуальными.
+  - Если пропущено несколько напоминаний, отправляется только последнее.
+- **Автор видит рецензии раунда после решения редактора** по этому раунду.
+- **Ещё не сделано:**
+  - уведомления в самом интерфейсе и ежедневный дайджест (сейчас только почта);
+  - файлы в обсуждениях;
+  - показ рецензентам чужих рецензий после решения;
+  - полнотекстовый поиск в подсказке рецензентов (сейчас — совпадение интересов с ключевыми словами и словами аннотации).
 
 **Что изменилось в версии 0.5** (по итогам этапа 2):
 - Хранилище файлов — интерфейс с двумя реализациями (§11):
@@ -654,13 +677,23 @@ GET    /api/v1/submissions/{id}/files/{fid}/download    # 302 на подпис�
 POST   /api/v1/submissions/{id}/similarity-checks       # запустить проверку
 GET    /api/v1/submissions/{id}/similarity-checks/{cid}/report   # 302 на отчёт провайдера
 GET|PUT /api/v1/journal/submission-settings             # настройки подачи (If-Match)
-POST   /api/v1/submissions/{id}/participants            # назначить на этап
-POST   /api/v1/submissions/{id}/decisions               # решение + письмо
-POST   /api/v1/review-rounds/{rid}/assignments          # пригласить рецензента
-GET    /api/v1/submissions/{id}/reviewer-suggestions
-GET    /api/v1/me/reviews
-POST   /api/v1/reviews/{aid}/accept | /decline | /submit
-POST   /api/v1/submissions/{id}/discussions
+GET    /api/v1/submissions/{id}/workflow                # этап, решения, раунды, обсуждения — как видит смотрящий
+POST   /api/v1/submissions/{id}/decisions/preview       # письмо автору и файлы для рецензентов до решения
+POST   /api/v1/submissions/{id}/decisions               # решение или рекомендация + письмо
+POST   /api/v1/submissions/{id}/withdraw                # отзыв автором
+POST   /api/v1/submissions/{id}/editors | DELETE …/editors/{uid}   # редакторы рукописи
+GET    /api/v1/submissions/{id}/review-rounds           # раунды: редакции — всё, автору — рецензии после решения
+GET    /api/v1/submissions/{id}/review-rounds/{rid}/suggestions?q=  # подсказка рецензентов
+POST   /api/v1/submissions/{id}/review-rounds/{rid}/invitation-preview
+POST   /api/v1/submissions/{id}/review-rounds/{rid}/reviewers       # пригласить рецензента
+POST   /api/v1/submissions/{id}/review-assignments/{aid}/cancel | /remind | /acknowledge
+POST   /api/v1/submissions/{id}/review-rounds/{rid}/revisions/uploads | …/submit   # исправления автора
+GET    /api/v1/reviews                                  # мои рецензии
+GET    /api/v1/reviews/{aid}                            # рукопись так, как её может видеть рецензент
+POST   /api/v1/reviews/{aid}/accept | /decline | /submit;  PUT …/draft
+POST   /api/v1/submissions/{id}/discussions             # и …/discussions/{did}/messages
+GET    /api/v1/submissions/{id}/emails                  # журнал писем (редакция)
+GET|PUT /api/v1/journal/review-settings;  /journal/review-forms;  /journal/email-templates/{key}
 GET    /api/v1/submissions/{id}/invoices
 POST   /api/v1/invoices/{id}/checkout                   # начать оплату
 POST   /api/v1/invoices/{id}/mark-paid | /refund | /void    # финансы
@@ -743,7 +776,8 @@ sequenceDiagram
 | `issue_invoice`, `render_invoice_pdf` | решение «Принять» |
 | `invoice_reminders` | раз в сутки |
 | `reconcile_payments` | раз в сутки |
-| `review_reminders` | раз в час |
+| `review.send_reminders` | раз в час |
+| `files.prepare_review_copy` | файлы для рецензентов: копия без имён в свойствах |
 | `publish_scheduled` | раз в минуту: публикует выпуски и статьи с наступившей датой |
 | `build_published_snapshot` | публикация, новая версия |
 | `crossref_deposit`, `crossref_check_status` | публикация, новая версия |
@@ -1006,7 +1040,7 @@ journal-platform/
 | 6. Сайт журнала | Next.js, страницы, обновление по вебхуку, SEO, «How to cite» | работающий публичный сайт |
 | 7. Запуск | боевые ключи провайдеров, нагрузочные тесты, проверка безопасности, резервные копии и проверочное восстановление, инструкции, развёртывание на VPS | система в эксплуатации |
 
-Этапы 1 и 2 выполнены.
+Этапы 1–3 выполнены.
 
 Этапы 1–3 не зависят от внешних договоров. Регистрацию журнала, договор с эквайером и вступление в Crossref стоит начать параллельно с разработкой: они занимают время (§22).
 

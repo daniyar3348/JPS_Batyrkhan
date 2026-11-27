@@ -62,6 +62,14 @@ export const router = createBrowserRouter([
         }),
       },
       {
+        path: "reviews",
+        lazy: async () => ({ Component: (await import("./reviews/MyReviewsPage")).MyReviewsPage }),
+      },
+      {
+        path: "reviews/:id",
+        lazy: async () => ({ Component: (await import("./reviews/ReviewPage")).ReviewPage }),
+      },
+      {
         path: "editorial",
         lazy: async () => ({
           Component: (await import("./submissions/EditorialQueuePage")).EditorialQueuePage,
@@ -84,6 +92,27 @@ export const router = createBrowserRouter([
             handle: requires("journal.settings.edit"),
             lazy: async () => ({
               Component: (await import("./pages/admin/SubmissionSettingsPage")).SubmissionSettingsPage,
+            }),
+          },
+          {
+            path: "review-settings",
+            handle: requires("journal.settings.edit"),
+            lazy: async () => ({
+              Component: (await import("./pages/admin/ReviewSettingsPage")).ReviewSettingsPage,
+            }),
+          },
+          {
+            path: "review-forms",
+            handle: requires("journal.settings.edit"),
+            lazy: async () => ({
+              Component: (await import("./pages/admin/ReviewFormsPage")).ReviewFormsPage,
+            }),
+          },
+          {
+            path: "email-templates",
+            handle: requires("journal.settings.edit"),
+            lazy: async () => ({
+              Component: (await import("./pages/admin/EmailTemplatesPage")).EmailTemplatesPage,
             }),
           },
           {

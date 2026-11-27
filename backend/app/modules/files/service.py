@@ -23,12 +23,14 @@ from app.core.db import utcnow
 from app.core.errors import Conflict, FieldError, NotFound, ValidationFailed
 from app.core.jobs import enqueue
 from app.core.storage import PresignedUpload, Storage
-from app.modules.files.models import FileRevision, FileStatus, SubmissionFile
+from app.modules.files import anonymize
+from app.modules.files.models import FileRevision, FileStage, FileStatus, SubmissionFile
 from app.modules.files.types import ALLOWED_EXTENSIONS, FILE_TYPES, Genre, content_problem, extension_of
 
 logger = logging.getLogger(__name__)
 
 PROCESS_REVISION = "files.process_revision"
+PREPARE_REVIEW_COPY = "files.prepare_review_copy"
 DELETE_OBJECTS = "files.delete_objects"
 PENDING_UPLOAD_TTL = timedelta(days=1)
 
@@ -55,7 +57,9 @@ class FileService:
         size: int,
         max_size_mb: int,
         uploaded_by_id: int,
-        file_stage: str = "submission",
+        file_stage: str = FileStage.SUBMISSION,
+        review_round_id: int | None = None,
+        review_assignment_id: int | None = None,
     ) -> tuple[SubmissionFile, PresignedUpload]:
         name = clean_file_name(file_name)
         extension = extension_of(name)
@@ -72,10 +76,12 @@ class FileService:
             raise ValidationFailed(f"Files must be {max_size_mb} MB or smaller.", code="file_too_large")
 
         file_type = FILE_TYPES[extension]
-        key = f"journals/{journal_id}/submissions/{submission_id}/{uuid.uuid4().hex}{extension}"
+        key = object_key(journal_id, submission_id, extension)
         record = SubmissionFile(
             submission_id=submission_id,
             file_stage=file_stage,
+            review_round_id=review_round_id,
+            review_assignment_id=review_assignment_id,
             genre=genre.value,
             name=name,
             uploaded_by_id=uploaded_by_id,
@@ -125,8 +131,91 @@ class FileService:
             revision.rejection_reason = problem
             await enqueue(self.db, DELETE_OBJECTS, {"keys": [revision.storage_key]})
             logger.info("File rejected", extra={"revision_id": revision.id, "reason": problem})
-        else:
-            revision.status = FileStatus.READY
+            return
+        record = await self.db.get(SubmissionFile, revision.submission_file_id)
+        if record is not None and record.file_stage == FileStage.REVIEW_ATTACHMENT:
+            # A reviewer's file goes to the authors: remove the reviewer's name from its metadata.
+            await self._strip_in_place(revision)
+        revision.status = FileStatus.READY
+
+    async def _strip_in_place(self, revision: FileRevision) -> None:
+        extension = extension_of(revision.original_name)
+        if not anonymize.can_strip(extension):
+            revision.metadata_removed = False
+            return
+        data, removed = anonymize.strip(await self.storage.get_bytes(revision.storage_key), extension)
+        revision.metadata_removed = removed
+        if not removed:
+            return
+        old_key = revision.storage_key
+        new_key = old_key.rsplit("/", 1)[0] + f"/{uuid.uuid4().hex}{extension}"
+        await self.storage.put_bytes(new_key, data, content_type=revision.content_type)
+        digest = await self.storage.digest(new_key)
+        revision.storage_key = new_key
+        revision.size_bytes = digest.size
+        revision.sha256 = digest.sha256
+        await enqueue(self.db, DELETE_OBJECTS, {"keys": [old_key]})
+
+    # ------------------------------------------------------------------ reviewers' copies
+
+    async def create_review_copy(
+        self, source: SubmissionFile, *, journal_id: int, review_round_id: int, created_by_id: int
+    ) -> SubmissionFile:
+        """A copy of ``source`` for the reviewers of a round. The worker fills it in, without metadata."""
+        original = source.current
+        if original.status != FileStatus.READY:
+            raise Conflict(f"“{source.name}” is not ready yet.", code="file_not_ready")
+        extension = extension_of(original.original_name)
+        record = SubmissionFile(
+            submission_id=source.submission_id,
+            file_stage=FileStage.REVIEW,
+            review_round_id=review_round_id,
+            source_file_id=source.id,
+            genre=source.genre,
+            name=source.name,
+            uploaded_by_id=created_by_id,
+        )
+        record.revisions = [
+            FileRevision(
+                storage_key=object_key(journal_id, source.submission_id, extension),
+                original_name=original.original_name,
+                size_bytes=original.size_bytes,
+                content_type=original.content_type,
+                status=FileStatus.PROCESSING,
+                uploaded_by_id=created_by_id,
+            )
+        ]
+        self.db.add(record)
+        await self.db.flush()
+        await enqueue(
+            self.db,
+            PREPARE_REVIEW_COPY,
+            {"revision_id": record.current.id, "source_key": original.storage_key},
+        )
+        return record
+
+    async def prepare_review_copy(self, revision_id: int, source_key: str) -> None:
+        """Worker step: write the reviewers' copy with the authors' names removed from its metadata."""
+        revision = await self.db.get(FileRevision, revision_id)
+        if revision is None or revision.status != FileStatus.PROCESSING:
+            return
+        extension = extension_of(revision.original_name)
+        data, removed = anonymize.strip(await self.storage.get_bytes(source_key), extension)
+        await self.storage.put_bytes(revision.storage_key, data, content_type=revision.content_type)
+        digest = await self.storage.digest(revision.storage_key)
+        revision.size_bytes = digest.size
+        revision.sha256 = digest.sha256
+        revision.metadata_removed = removed
+        revision.processed_at = utcnow()
+        revision.status = FileStatus.READY
+
+    async def give_up_review_copy(self, revision_id: int) -> None:
+        revision = await self.db.get(FileRevision, revision_id)
+        if revision is None or revision.status != FileStatus.PROCESSING:
+            return
+        revision.status = FileStatus.REJECTED
+        revision.rejection_reason = "The reviewers' copy could not be prepared. Add the file again."
+        revision.processed_at = utcnow()
 
     async def give_up_revision(self, revision_id: int) -> None:
         """The worker could not read the stored file after every retry."""
@@ -138,11 +227,31 @@ class FileService:
         revision.processed_at = utcnow()
         logger.warning("File check gave up", extra={"revision_id": revision.id})
 
-    async def list(self, submission_id: int, *, file_stage: str = "submission") -> Sequence[SubmissionFile]:
+    async def list(
+        self,
+        submission_id: int,
+        *,
+        file_stage: str = FileStage.SUBMISSION,
+        review_round_id: int | None = None,
+        review_assignment_id: int | None = None,
+    ) -> Sequence[SubmissionFile]:
+        query = select(SubmissionFile).where(
+            SubmissionFile.submission_id == submission_id, SubmissionFile.file_stage == file_stage
+        )
+        if review_round_id is not None:
+            query = query.where(SubmissionFile.review_round_id == review_round_id)
+        if review_assignment_id is not None:
+            query = query.where(SubmissionFile.review_assignment_id == review_assignment_id)
+        return (await self.db.scalars(query.order_by(SubmissionFile.id))).all()
+
+    async def list_for_rounds(self, round_ids: Sequence[int]) -> Sequence[SubmissionFile]:
+        """Every file of the given review rounds: reviewers' copies, revisions and review attachments."""
+        if not round_ids:
+            return []
         return (
             await self.db.scalars(
                 select(SubmissionFile)
-                .where(SubmissionFile.submission_id == submission_id, SubmissionFile.file_stage == file_stage)
+                .where(SubmissionFile.review_round_id.in_(round_ids))
                 .order_by(SubmissionFile.id)
             )
         ).all()
@@ -213,6 +322,10 @@ class FileService:
         for record in records:
             await self.delete(record)
         return len(records)
+
+
+def object_key(journal_id: int, submission_id: int, extension: str) -> str:
+    return f"journals/{journal_id}/submissions/{submission_id}/{uuid.uuid4().hex}{extension}"
 
 
 def record_download_name(record: SubmissionFile) -> str:

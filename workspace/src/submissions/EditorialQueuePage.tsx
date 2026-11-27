@@ -6,6 +6,7 @@ import {
   Group,
   Select,
   Stack,
+  Switch,
   Table,
   Text,
   TextInput,
@@ -19,6 +20,7 @@ import { Link, useNavigate } from "react-router";
 import { api, unwrap } from "../api";
 import { PageHeader, QueryState } from "../components/common";
 import { formatDate } from "../lib/format";
+import { STAGE_LABELS, STAGES } from "../workflow/labels";
 import { statusLook } from "./labels";
 
 const STATUSES = [
@@ -35,10 +37,12 @@ export function EditorialQueuePage() {
   const [q] = useDebouncedValue(search.trim(), 300);
   const [status, setStatus] = useState("queued");
   const [sectionId, setSectionId] = useState<string | null>(null);
+  const [stage, setStage] = useState<string | null>(null);
+  const [assigned, setAssigned] = useState(false);
   const sections = useQuery({ queryKey: ["sections"], queryFn: () => unwrap(api.GET("/api/v1/sections")) });
 
   const queue = useInfiniteQuery({
-    queryKey: ["submissions", "editorial", q, status, sectionId],
+    queryKey: ["submissions", "editorial", q, status, sectionId, stage, assigned],
     queryFn: ({ pageParam }) =>
       unwrap(
         api.GET("/api/v1/submissions/editorial", {
@@ -47,6 +51,8 @@ export function EditorialQueuePage() {
               q: q || undefined,
               status,
               section_id: sectionId ? Number(sectionId) : undefined,
+              stage: stage ?? undefined,
+              assigned,
               cursor: pageParam ?? undefined,
             },
           },
@@ -82,6 +88,19 @@ export function EditorialQueuePage() {
           onChange={setSectionId}
           clearable
           w={{ base: "100%", sm: 220 }}
+        />
+        <Select
+          placeholder="All stages"
+          data={STAGES.map((value) => ({ value, label: STAGE_LABELS[value] ?? value }))}
+          value={stage}
+          onChange={setStage}
+          clearable
+          w={{ base: "100%", sm: 160 }}
+        />
+        <Switch
+          label="Assigned to me"
+          checked={assigned}
+          onChange={(event) => setAssigned(event.currentTarget.checked)}
         />
       </Group>
       {queue.data ? (

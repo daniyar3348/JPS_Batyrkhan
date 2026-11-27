@@ -17,9 +17,13 @@ from app.modules.journals.deps import (
     get_principal,
     require,
 )
-from app.modules.journals.models import Journal
+from app.modules.journals.email_templates import EmailTemplateService, TemplateSpec
+from app.modules.journals.models import EmailTemplate, Journal
 from app.modules.journals.permissions import ROLE_LABELS, Capability, Role
+from app.modules.journals.review_settings import ReviewSettings, ReviewSettingsOut, review_settings
 from app.modules.journals.schemas import (
+    EmailTemplateIn,
+    EmailTemplateOut,
     InviteIn,
     JournalOut,
     JournalUpdate,
@@ -32,6 +36,7 @@ from app.modules.journals.schemas import (
     SectionEditorsIn,
     SectionOut,
     SectionUpdate,
+    TemplateVariable,
 )
 from app.modules.journals.service import JournalService
 from app.modules.journals.submission_settings import (
@@ -107,6 +112,85 @@ async def update_submission_settings(
     await db.commit()
     response.headers["ETag"] = etag_for(principal.journal.version)
     return SubmissionSettingsOut.of(saved, principal.journal, settings)
+
+
+@router.get("/journal/review-settings", tags=["journal"])
+async def get_review_settings(
+    response: Response, principal: Principal = Depends(get_principal)
+) -> ReviewSettingsOut:
+    """How the journal runs peer review: method, deadlines, reminders, guidelines for reviewers."""
+    response.headers["ETag"] = etag_for(principal.journal.version)
+    return ReviewSettingsOut.of(review_settings(principal.journal), principal.journal)
+
+
+@router.put("/journal/review-settings", tags=["journal"])
+async def update_review_settings(
+    data: ReviewSettings,
+    response: Response,
+    if_match: str | None = Header(default=None),
+    principal: Principal = Depends(require(Capability.JOURNAL_SETTINGS_EDIT)),
+    service: JournalService = Depends(get_journal_service),
+    db: AsyncSession = Depends(get_db),
+) -> ReviewSettingsOut:
+    saved = await service.update_review_settings(
+        principal.journal, data, expected_version=parse_if_match(if_match), actor=principal.user
+    )
+    await db.commit()
+    response.headers["ETag"] = etag_for(principal.journal.version)
+    return ReviewSettingsOut.of(saved, principal.journal)
+
+
+def _template_out(spec: TemplateSpec, override: EmailTemplate | None) -> EmailTemplateOut:
+    return EmailTemplateOut(
+        key=spec.key,
+        group=spec.group,
+        name=spec.name,
+        description=spec.description,
+        recipient=spec.recipient,
+        subject=override.subject if override else spec.subject,
+        body=override.body if override else spec.body,
+        default_subject=spec.subject,
+        default_body=spec.body,
+        is_custom=override is not None,
+        updated_at=override.updated_at if override else None,
+        variables=[TemplateVariable(name=k, description=v) for k, v in spec.all_variables.items()],
+    )
+
+
+@router.get("/journal/email-templates", tags=["journal"])
+async def list_email_templates(
+    principal: Principal = Depends(require(Capability.JOURNAL_SETTINGS_EDIT)),
+    db: AsyncSession = Depends(get_db),
+) -> list[EmailTemplateOut]:
+    """Every e-mail the journal sends about manuscripts, with its current wording."""
+    rows = await EmailTemplateService(db).list(principal.journal)
+    return [_template_out(spec, override) for spec, override in rows]
+
+
+@router.put("/journal/email-templates/{key}", tags=["journal"])
+async def update_email_template(
+    key: str,
+    data: EmailTemplateIn,
+    principal: Principal = Depends(require(Capability.JOURNAL_SETTINGS_EDIT)),
+    db: AsyncSession = Depends(get_db),
+) -> EmailTemplateOut:
+    spec, override = await EmailTemplateService(db).update(
+        principal.journal, key, subject=data.subject, body=data.body, actor=principal.user
+    )
+    await db.commit()
+    return _template_out(spec, override)
+
+
+@router.delete("/journal/email-templates/{key}", tags=["journal"])
+async def reset_email_template(
+    key: str,
+    principal: Principal = Depends(require(Capability.JOURNAL_SETTINGS_EDIT)),
+    db: AsyncSession = Depends(get_db),
+) -> EmailTemplateOut:
+    """Go back to the default wording."""
+    spec = await EmailTemplateService(db).reset(principal.journal, key, actor=principal.user)
+    await db.commit()
+    return _template_out(spec, None)
 
 
 @router.get("/sections", tags=["sections"])

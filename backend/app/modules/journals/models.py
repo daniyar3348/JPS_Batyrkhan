@@ -72,3 +72,18 @@ class UserRole(Base):
     role: Mapped[str] = mapped_column(String(30), index=True)
     granted_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(default=utcnow, server_default=func.now())
+
+
+class EmailTemplate(Base):
+    """The journal's own wording of an e-mail. Without a row the default wording is used."""
+
+    __tablename__ = "email_templates"
+    __table_args__ = (UniqueConstraint("journal_id", "key"),)
+
+    id: Mapped[int] = id_column()
+    journal_id: Mapped[int] = mapped_column(ForeignKey("journals.id", ondelete="CASCADE"))
+    key: Mapped[str] = mapped_column(String(60))
+    subject: Mapped[str] = mapped_column(String(300))
+    body: Mapped[str] = mapped_column(Text)
+    updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, server_default=func.now())

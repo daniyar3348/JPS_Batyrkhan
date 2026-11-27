@@ -12,6 +12,7 @@ from app.core.deps import get_db, get_settings, get_storage
 from app.core.errors import Forbidden, NotFound
 from app.core.pagination import Page, clamp_limit
 from app.core.storage import Storage
+from app.modules.files.models import FileStage
 from app.modules.journals.deps import Principal, get_principal
 from app.modules.journals.submission_settings import submission_settings
 from app.modules.submissions.models import Submission, SubmissionStatus
@@ -85,7 +86,11 @@ async def list_my_submissions(
 @router.get("/editorial")
 async def list_editorial_queue(
     status: str | None = Query(default=SubmissionStatus.QUEUED, max_length=20),
+    stage: str | None = Query(default=None, max_length=20),
     section_id: int | None = None,
+    assigned: bool = Query(
+        default=False, description="Only manuscripts the user is assigned to as an editor"
+    ),
     q: str | None = Query(default=None, max_length=200, description="Search by number or title"),
     cursor: str | None = None,
     limit: int = Query(default=50, ge=1, le=200),
@@ -94,7 +99,14 @@ async def list_editorial_queue(
 ) -> Page[SubmissionSummary]:
     """Submitted manuscripts the user handles as an editor (never their own)."""
     rows, next_cursor = await service.list_editorial(
-        principal, status=status or None, section_id=section_id, q=q, cursor=cursor, limit=clamp_limit(limit)
+        principal,
+        status=status or None,
+        stage=stage or None,
+        section_id=section_id,
+        assigned_to_me=assigned,
+        q=q,
+        cursor=cursor,
+        limit=clamp_limit(limit),
     )
     scores = await service.latest_scores([s.id for s in rows])
     threshold = submission_settings(principal.journal).similarity.threshold_percent
@@ -301,8 +313,11 @@ async def download_file(
     service: SubmissionService = Depends(get_submission_service),
 ) -> RedirectResponse:
     """Redirects to a short-lived link to the file."""
-    submission, _ = await _visible(service, principal, submission_id)
+    submission, access = await _visible(service, principal, submission_id)
     record = await service.files.get(submission.id, file_id)
+    if record.file_stage != FileStage.SUBMISSION and not access.is_editor:
+        # Files of later stages have their own rules (see the review module).
+        raise NotFound("File not found.")
     return RedirectResponse(service.files.download_url(record), status_code=302)
 
 

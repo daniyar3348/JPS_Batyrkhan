@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, Self
 
-from pydantic import BaseModel, EmailStr, Field, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints, field_validator
 
 from app.modules.identity.models import User
 from app.modules.identity.schemas import Affiliation, Name, OptionalName, UserOut, UserSummary
@@ -193,3 +193,30 @@ class MeOut(BaseModel):
     roles: list[Role]
     capabilities: list[Capability]
     csrf_token: str
+
+
+class TemplateVariable(BaseModel):
+    name: str
+    description: str
+
+
+class EmailTemplateOut(BaseModel):
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+    key: str
+    group: str
+    name: str
+    description: str
+    recipient: str
+    subject: str
+    body: str
+    default_subject: str
+    default_body: str
+    is_custom: bool
+    updated_at: datetime | None = None
+    variables: list[TemplateVariable]
+
+
+class EmailTemplateIn(BaseModel):
+    subject: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
+    body: Annotated[str, StringConstraints(min_length=1, max_length=20000)]

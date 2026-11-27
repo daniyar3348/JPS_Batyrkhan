@@ -19,6 +19,7 @@ from app.modules.identity.schemas import RegisterIn
 from app.modules.identity.service import IdentityService
 from app.modules.journals.models import Journal, Section, SectionEditor, UserRole
 from app.modules.journals.permissions import ROLE_LABELS, SECTION_EDITOR_ROLES, Role
+from app.modules.journals.review_settings import ReviewSettings, review_settings
 from app.modules.journals.schemas import InviteIn, JournalUpdate, SectionCreate, SectionUpdate
 from app.modules.journals.submission_settings import SubmissionSettings, submission_settings
 
@@ -84,25 +85,44 @@ class JournalService:
     async def update_submission_settings(
         self, journal: Journal, data: SubmissionSettings, *, expected_version: int, actor: User
     ) -> SubmissionSettings:
-        ensure_version(journal.version, expected_version)
         before = submission_settings(journal)
+        await self._save_settings(journal, "submission", before, data, expected_version, actor)
+        return data
+
+    async def update_review_settings(
+        self, journal: Journal, data: ReviewSettings, *, expected_version: int, actor: User
+    ) -> ReviewSettings:
+        before = review_settings(journal)
+        await self._save_settings(journal, "review", before, data, expected_version, actor)
+        return data
+
+    async def _save_settings(
+        self,
+        journal: Journal,
+        name: str,
+        before: SubmissionSettings | ReviewSettings,
+        data: SubmissionSettings | ReviewSettings,
+        expected_version: int,
+        actor: User,
+    ) -> None:
+        """Replace one part of ``Journal.settings``, checking the version the client edited."""
+        ensure_version(journal.version, expected_version)
         if data == before:
-            return before
+            return
         # Assign a new dict so SQLAlchemy notices the change to the JSON column.
-        journal.settings = {**journal.settings, "submission": data.model_dump(mode="json")}
+        journal.settings = {**journal.settings, name: data.model_dump(mode="json")}
         await self.db.flush()
         changed = sorted(
-            name for name in SubmissionSettings.model_fields if getattr(data, name) != getattr(before, name)
+            field for field in type(data).model_fields if getattr(data, field) != getattr(before, field)
         )
         await self.audit.record(
-            "journal.submission_settings_updated",
+            f"journal.{name}_settings_updated",
             "journal",
             journal.id,
             actor_id=actor.id,
             journal_id=journal.id,
             data={"fields": changed},
         )
-        return data
 
     # ------------------------------------------------------------------ roles
 

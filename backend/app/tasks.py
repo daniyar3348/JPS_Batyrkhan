@@ -4,6 +4,14 @@ from app.core import jobs as core_jobs
 from app.modules.files import tasks as file_tasks
 from app.modules.identity import tasks as identity_tasks
 from app.modules.notifications import tasks as notification_tasks
+from app.modules.review import tasks as review_tasks
 from app.modules.similarity import tasks as similarity_tasks
 
-__all__ = ["core_jobs", "file_tasks", "identity_tasks", "notification_tasks", "similarity_tasks"]
+__all__ = [
+    "core_jobs",
+    "file_tasks",
+    "identity_tasks",
+    "notification_tasks",
+    "review_tasks",
+    "similarity_tasks",
+]

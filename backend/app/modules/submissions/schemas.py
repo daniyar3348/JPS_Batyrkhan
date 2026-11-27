@@ -12,6 +12,7 @@ from app.modules.identity.schemas import Affiliation, Country, Name, OptionalNam
 from app.modules.identity.validation import normalize_orcid
 from app.modules.similarity.models import SimilarityCheck
 from app.modules.submissions.models import Contributor, Publication
+from app.modules.submissions.policies import Access
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
 LongText = Annotated[str, StringConstraints(strip_whitespace=True, max_length=30000)]
@@ -198,6 +199,8 @@ class PublicationOut(BaseModel):
 
 
 class FileOut(BaseModel):
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
     id: int
     genre: Genre
     name: str
@@ -209,11 +212,16 @@ class FileOut(BaseModel):
     uploaded_at: datetime
     # Relative URL that redirects to a short-lived download link; null until the file is checked.
     download_url: str | None
+    # Files that cross a blind review: whether names were removed from the file's metadata.
+    # False means the format could not be cleaned and someone should check the file by hand.
+    metadata_removed: bool | None = None
 
     @classmethod
-    def of(cls, record: SubmissionFile) -> Self:
+    def of(cls, record: SubmissionFile, *, files_url: str | None = None) -> Self:
+        """``files_url`` is where this viewer downloads files (reviewers use their review's address)."""
         revision = record.current
         ready = revision.status == FileStatus.READY
+        base = files_url or f"/api/v1/submissions/{record.submission_id}/files"
         return cls(
             id=record.id,
             genre=Genre(record.genre),
@@ -224,9 +232,8 @@ class FileOut(BaseModel):
             size_bytes=revision.size_bytes,
             content_type=revision.content_type,
             uploaded_at=revision.created_at,
-            download_url=f"/api/v1/submissions/{record.submission_id}/files/{record.id}/download"
-            if ready
-            else None,
+            download_url=f"{base}/{record.id}/download" if ready else None,
+            metadata_removed=revision.metadata_removed,
         )
 
 
@@ -268,9 +275,25 @@ class SimilarityCheckOut(BaseModel):
 
 
 class Viewer(BaseModel):
+    """What the signed-in user may do with this submission."""
+
     is_author: bool
     is_editor: bool
     can_edit: bool
+    can_manage: bool
+    can_decide: bool
+    recommend_only: bool
+
+    @classmethod
+    def of(cls, access: Access) -> Viewer:
+        return cls(
+            is_author=access.is_author,
+            is_editor=access.is_editor,
+            can_edit=access.can_edit,
+            can_manage=access.can_manage,
+            can_decide=access.can_decide,
+            recommend_only=access.recommend_only,
+        )
 
 
 class SubmissionOut(BaseModel):

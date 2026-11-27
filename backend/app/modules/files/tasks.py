@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Any
 
 from app.core.jobs import JobContext, periodic, task
-from app.modules.files.service import DELETE_OBJECTS, PROCESS_REVISION, FileService
+from app.modules.files.service import DELETE_OBJECTS, PREPARE_REVIEW_COPY, PROCESS_REVISION, FileService
 
 CLEANUP_ABANDONED = "files.cleanup_abandoned"
 
@@ -18,6 +18,19 @@ async def give_up_revision(ctx: JobContext, payload: dict[str, Any], error: str)
 async def process_revision(ctx: JobContext, payload: dict[str, Any]) -> None:
     async with ctx.session_factory() as db, db.begin():
         await FileService(db, ctx.storage).process_revision(int(payload["revision_id"]))
+
+
+async def give_up_review_copy(ctx: JobContext, payload: dict[str, Any], error: str) -> None:
+    async with ctx.session_factory() as db, db.begin():
+        await FileService(db, ctx.storage).give_up_review_copy(int(payload["revision_id"]))
+
+
+@task(PREPARE_REVIEW_COPY, on_give_up=give_up_review_copy)
+async def prepare_review_copy(ctx: JobContext, payload: dict[str, Any]) -> None:
+    async with ctx.session_factory() as db, db.begin():
+        await FileService(db, ctx.storage).prepare_review_copy(
+            int(payload["revision_id"]), str(payload["source_key"])
+        )
 
 
 @task(DELETE_OBJECTS, max_attempts=10)
