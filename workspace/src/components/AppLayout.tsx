@@ -16,9 +16,11 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconAdjustments,
   IconBook2,
+  IconCash,
   IconChecklist,
   IconChevronDown,
   IconClipboardList,
+  IconDiscount,
   IconFileText,
   IconForms,
   IconHome,
@@ -26,6 +28,7 @@ import {
   IconLogout,
   IconMail,
   IconMessageCheck,
+  IconReceipt,
   IconSettings,
   IconStack2,
   IconUser,
@@ -47,6 +50,8 @@ interface NavItem {
   icon: ReactNode;
   capability?: Capability;
   visible?: (me: MeOut) => boolean;
+  /** When the item is highlighted; by default, for its path and everything below it. */
+  active?: (path: string) => boolean;
 }
 
 const MAIN_NAV: NavItem[] = [
@@ -65,6 +70,28 @@ const MAIN_NAV: NavItem[] = [
     visible: (me) => can(me, "submissions.view_all") || hasRole(me, "section_editor"),
   },
   { to: "/profile", label: "My profile", icon: <IconUser size={18} /> },
+];
+
+const FINANCE_NAV: NavItem[] = [
+  {
+    to: "/finance",
+    label: "Invoices",
+    icon: <IconReceipt size={18} />,
+    capability: "payments.manage",
+    active: (path) => path === "/finance" || path.startsWith("/finance/invoices"),
+  },
+  {
+    to: "/finance/waivers",
+    label: "Waiver requests",
+    icon: <IconDiscount size={18} />,
+    capability: "payments.manage",
+  },
+  {
+    to: "/finance/settings",
+    label: "Payment settings",
+    icon: <IconCash size={18} />,
+    capability: "payments.manage",
+  },
 ];
 
 const ADMIN_NAV: NavItem[] = [
@@ -125,9 +152,14 @@ export function AppLayout() {
   const allowed = (item: NavItem) =>
     (!item.capability || can(me, item.capability)) && (!item.visible || item.visible(me));
   const mainItems = MAIN_NAV.filter(allowed);
+  const financeItems = FINANCE_NAV.filter(allowed);
   const adminItems = ADMIN_NAV.filter(allowed);
-  const isActive = (to: string) =>
-    to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+  const isActive = (item: NavItem) =>
+    item.active
+      ? item.active(location.pathname)
+      : item.to === "/"
+        ? location.pathname === "/"
+        : location.pathname.startsWith(item.to);
   const renderItem = (item: NavItem) => (
     <NavLink
       key={item.to}
@@ -135,7 +167,7 @@ export function AppLayout() {
       to={item.to}
       label={item.label}
       leftSection={item.icon}
-      active={isActive(item.to)}
+      active={isActive(item)}
       onClick={close}
     />
   );
@@ -198,6 +230,14 @@ export function AppLayout() {
       <AppShell.Navbar p="sm">
         <AppShell.Section grow component={ScrollArea}>
           <Stack gap={2}>{mainItems.map(renderItem)}</Stack>
+          {financeItems.length > 0 ? (
+            <>
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase" mt="lg" mb={6} px="sm">
+                Finance
+              </Text>
+              <Stack gap={2}>{financeItems.map(renderItem)}</Stack>
+            </>
+          ) : null}
           {adminItems.length > 0 ? (
             <>
               <Text size="xs" fw={700} c="dimmed" tt="uppercase" mt="lg" mb={6} px="sm">

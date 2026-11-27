@@ -27,6 +27,8 @@ class Capability(StrEnum):
     SUBMISSIONS_CREATE = "submissions.create"
     # Every submitted manuscript in the journal. Section editors see their sections' manuscripts instead.
     SUBMISSIONS_VIEW_ALL = "submissions.view_all"
+    # Fees, invoices, payments, refunds and waiver requests. Editors never get it (editorial independence).
+    PAYMENTS_MANAGE = "payments.manage"
 
 
 ROLE_CAPABILITIES: dict[Role, frozenset[Capability]] = {
@@ -38,7 +40,7 @@ ROLE_CAPABILITIES: dict[Role, frozenset[Capability]] = {
     Role.COPYEDITOR: frozenset(),
     Role.LAYOUT_EDITOR: frozenset(),
     Role.PROOFREADER: frozenset(),
-    Role.FINANCE_MANAGER: frozenset(),
+    Role.FINANCE_MANAGER: frozenset({Capability.PAYMENTS_MANAGE}),
 }
 
 ROLE_LABELS: dict[Role, str] = {

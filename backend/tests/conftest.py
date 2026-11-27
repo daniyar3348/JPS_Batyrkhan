@@ -51,6 +51,7 @@ def settings(tmp_path_factory: pytest.TempPathFactory) -> Settings:
         storage_backend="local",
         storage_local_path=str(tmp_path_factory.mktemp("storage")),
         similarity_provider="fake",
+        payments_test_provider=True,
         environment="test",
         database_url=TEST_DATABASE_URL,
         email_backend="memory",

@@ -75,6 +75,14 @@ class Settings(BaseSettings):
     # Similarity (plagiarism) checking service. "fake" returns made-up scores, for development only.
     similarity_provider: Literal["disabled", "fake"] = "disabled"
 
+    # Payments. The test provider simulates a card payment page with signed notifications (development only).
+    payments_test_provider: bool = False
+    # PayPal (REST API). The webhook id is shown in the PayPal developer dashboard next to the webhook URL.
+    paypal_mode: Literal["sandbox", "live"] = "sandbox"
+    paypal_client_id: str | None = None
+    paypal_client_secret: SecretStr | None = None
+    paypal_webhook_id: str | None = None
+
     @model_validator(mode="after")
     def _check_production(self) -> Self:
         if self.environment != "production":
@@ -91,6 +99,10 @@ class Settings(BaseSettings):
             problems.append("JPS_STORAGE_BACKEND must be s3")
         if self.similarity_provider == "fake":
             problems.append("JPS_SIMILARITY_PROVIDER must not be fake")
+        if self.payments_test_provider:
+            problems.append("JPS_PAYMENTS_TEST_PROVIDER must be false")
+        if self.paypal_client_id and self.paypal_mode != "live":
+            problems.append("JPS_PAYPAL_MODE must be live")
         if problems:
             raise ValueError("Unsafe production settings: " + "; ".join(problems))
         return self

@@ -22,6 +22,7 @@ import {
   IconHistory,
   IconMessages,
   IconPencil,
+  IconReceipt,
   IconRefresh,
   IconUsersGroup,
 } from "@tabler/icons-react";
@@ -32,6 +33,8 @@ import { api, unwrap } from "../api";
 import { PageHeader, QueryState } from "../components/common";
 import { formatDateTime } from "../lib/format";
 import { notifySaved, showRequestError } from "../lib/forms";
+import { FeePanel } from "../payments/FeePanel";
+import { useBilling } from "../payments/queries";
 import { AuthorReviews } from "../workflow/AuthorReviews";
 import { DecisionModal } from "../workflow/DecisionModal";
 import { Discussions } from "../workflow/Discussions";
@@ -306,6 +309,16 @@ function EditorView({ data, workflow }: { data: SubmissionOut; workflow: Workflo
   return (
     <Stack gap="lg">
       <DecisionBar options={workflow.available_decisions} onChoose={setDeciding} />
+      {workflow.fee_settled !== null ? (
+        <Group gap="xs">
+          <Text size="sm" c="dimmed">
+            Publication fee:
+          </Text>
+          <Badge color={workflow.fee_settled ? "teal" : "orange"} variant="light">
+            {workflow.fee_settled ? "Settled — can be published" : "Not settled yet — cannot be published"}
+          </Badge>
+        </Group>
+      ) : null}
       <Tabs value={tab} onChange={(value) => setParams({ tab: value ?? "overview" }, { replace: true })}>
         <Tabs.List>
           <Tabs.Tab value="overview" leftSection={<IconFileText size={16} />}>
@@ -356,6 +369,7 @@ function AuthorView({ data, workflow }: { data: SubmissionOut; workflow: Workflo
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "overview";
   const select = (value: string | null) => setParams({ tab: value ?? "overview" }, { replace: true });
+  const billing = useBilling(data.id);
   return (
     <Stack gap="lg">
       <AuthorStatus workflow={workflow} onOpenReviews={() => select("reviews")} />
@@ -370,9 +384,22 @@ function AuthorView({ data, workflow }: { data: SubmissionOut; workflow: Workflo
           <Tabs.Tab value="discussions" leftSection={<IconMessages size={16} />}>
             Discussions{workflow.discussions.length ? ` (${workflow.discussions.length})` : ""}
           </Tabs.Tab>
+          {billing.data?.enabled ? (
+            <Tabs.Tab value="fee" leftSection={<IconReceipt size={16} />}>
+              Publication fee
+              {billing.data.invoices.some((i) => i.status === "issued") ? (
+                <Badge ml={6} size="xs" color="orange" variant="filled" circle>
+                  1
+                </Badge>
+              ) : null}
+            </Tabs.Tab>
+          ) : null}
         </Tabs.List>
         <Tabs.Panel value="overview" pt="lg">
           <SubmissionSummaryCards submission={data} />
+        </Tabs.Panel>
+        <Tabs.Panel value="fee" pt="lg">
+          {tab === "fee" ? <FeePanel submissionId={data.id} /> : null}
         </Tabs.Panel>
         <Tabs.Panel value="reviews" pt="lg">
           <Stack gap="lg">

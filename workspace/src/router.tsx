@@ -70,6 +70,39 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import("./reviews/ReviewPage")).ReviewPage }),
       },
       {
+        path: "payments/return",
+        lazy: async () => ({ Component: (await import("./payments/PaymentReturnPage")).PaymentReturnPage }),
+      },
+      {
+        // Finance managers only: invoices, payments, refunds, waiver requests.
+        path: "finance",
+        element: <CapabilityOutlet />,
+        children: [
+          {
+            index: true,
+            handle: requires("payments.manage"),
+            lazy: async () => ({ Component: (await import("./finance/InvoicesPage")).InvoicesPage }),
+          },
+          {
+            path: "invoices/:id",
+            handle: requires("payments.manage"),
+            lazy: async () => ({ Component: (await import("./finance/InvoicePage")).InvoicePage }),
+          },
+          {
+            path: "waivers",
+            handle: requires("payments.manage"),
+            lazy: async () => ({ Component: (await import("./finance/WaiversPage")).WaiversPage }),
+          },
+          {
+            path: "settings",
+            handle: requires("payments.manage"),
+            lazy: async () => ({
+              Component: (await import("./finance/PaymentSettingsPage")).PaymentSettingsPage,
+            }),
+          },
+        ],
+      },
+      {
         path: "editorial",
         lazy: async () => ({
           Component: (await import("./submissions/EditorialQueuePage")).EditorialQueuePage,

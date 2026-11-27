@@ -58,10 +58,11 @@ class Mailer:
         values: Mapping[str, str] | None = None,
         sent_by_id: int | None = None,
         redact: Iterable[str] = (),
+        log: bool = True,
     ) -> None:
         rendered = await self.render(journal, key, submission, recipient_name=to_name, values=values)
         await self.send_rendered(
-            rendered, submission, to_email=to_email, key=key, sent_by_id=sent_by_id, redact=redact
+            rendered, submission, to_email=to_email, key=key, sent_by_id=sent_by_id, redact=redact, log=log
         )
 
     async def send_rendered(
@@ -73,14 +74,19 @@ class Mailer:
         key: str | None,
         sent_by_id: int | None = None,
         redact: Iterable[str] = (),
+        log: bool = True,
     ) -> None:
-        """Send wording an editor may have changed; it is logged exactly as sent."""
+        """Send wording an editor may have changed; it is logged exactly as sent.
+
+        ``log=False`` keeps it out of the manuscript's e-mail log, which the editors read: payment
+        e-mails must not reach them (editorial independence, §8.5).
+        """
         await queue_email(
             self.db,
             to=to_email,
             subject=rendered.subject,
             text=rendered.body,
-            submission_id=submission.id,
+            submission_id=submission.id if log else None,
             template_key=key,
             sent_by_id=sent_by_id,
             redact=redact,

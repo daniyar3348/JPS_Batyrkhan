@@ -28,6 +28,8 @@ x-backend: &backend
     JPS_STORAGE_LOCAL_PATH: /app/var/storage
     # Scores are made up, so the whole flow can be tried without a similarity service account.
     JPS_SIMILARITY_PROVIDER: fake
+    # A pretend card payment page, so the whole payment flow can be tried without a provider account.
+    JPS_PAYMENTS_TEST_PROVIDER: "true"
   volumes:
     - file-data:/app/var/storage
   depends_on:

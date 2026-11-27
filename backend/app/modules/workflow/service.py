@@ -21,6 +21,7 @@ from app.modules.identity.models import User
 from app.modules.journals.email_templates import Rendered
 from app.modules.journals.models import Journal
 from app.modules.journals.permissions import SECTION_EDITOR_ROLES, Role
+from app.modules.payments.service import PaymentService
 from app.modules.review.forms import questions_of
 from app.modules.review.models import AssignmentStatus, RoundStatus
 from app.modules.review.policies import answer_text, author_label
@@ -57,6 +58,7 @@ class WorkflowService:
         self.journals = self.review.journals
         self.mailer = self.review.mailer
         self.audit = AuditService(db)
+        self.payments = PaymentService(db, settings)
 
     # ------------------------------------------------------------------ decisions
 
@@ -225,7 +227,9 @@ class WorkflowService:
                 )
         if rule.recommendation:
             await self._tell_deciders(journal, submission, rule, data.reason, actor)
-        # Stage 4 adds: on "accept", issue the publication fee invoice in this transaction.
+        if rule.decision == Decision.ACCEPT:
+            # The publication fee is invoiced only now, never before acceptance (§8.5).
+            await self.payments.issue_for_accepted(journal, submission, actor)
         await self.audit.record(
             "submission.recommendation" if rule.recommendation else "submission.decision",
             "submission",

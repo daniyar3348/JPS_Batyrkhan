@@ -159,6 +159,7 @@ async def workflow_view(
         can_withdraw=access.is_author
         and submission.stage in withdraw.stages
         and submission.status in withdraw.statuses,
+        fee_settled=await service.payments.fee_settled(principal.journal, submission),
     )
 
 

@@ -7,6 +7,15 @@ from app.modules.files.models import FileRevision, SubmissionFile
 from app.modules.identity.models import AuthSession, Consent, User, UserToken
 from app.modules.journals.models import EmailTemplate, Journal, Section, SectionEditor, UserRole
 from app.modules.notifications.models import EmailLog
+from app.modules.payments.models import (
+    Invoice,
+    InvoiceCounter,
+    InvoiceReminder,
+    Payment,
+    ProviderEvent,
+    Refund,
+    WaiverRequest,
+)
 from app.modules.review.models import ReviewAssignment, ReviewForm, ReviewReminder, ReviewRound
 from app.modules.similarity.models import SimilarityCheck
 from app.modules.submissions.models import (
@@ -36,11 +45,17 @@ __all__ = [
     "EmailLog",
     "EmailTemplate",
     "FileRevision",
+    "Invoice",
+    "InvoiceCounter",
+    "InvoiceReminder",
     "Job",
     "Journal",
     "Participant",
+    "Payment",
     "PeriodicRun",
+    "ProviderEvent",
     "Publication",
+    "Refund",
     "ReviewAssignment",
     "ReviewForm",
     "ReviewReminder",
@@ -54,4 +69,5 @@ __all__ = [
     "User",
     "UserRole",
     "UserToken",
+    "WaiverRequest",
 ]

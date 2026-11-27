@@ -1451,6 +1451,324 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/submissions/{submission_id}/billing": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Billing
+     * @description The publication fee of a manuscript: invoices, payments, waiver requests, how to pay.
+     */
+    get: operations["get_billing"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/submissions/{submission_id}/waiver-requests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request Waiver
+     * @description Ask to reduce or waive the fee. The finance managers decide; the editors never see it.
+     */
+    post: operations["request_waiver"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/invoices/{invoice_id}/payer": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Change Payer
+     * @description Who the invoice is made out to, e.g. the author's university.
+     */
+    patch: operations["change_payer"];
+    trace?: never;
+  };
+  "/api/v1/payments/invoices/{invoice_id}/checkout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start Checkout
+     * @description Start paying online. The response says where to send the payer (the provider's page).
+     */
+    post: operations["start_checkout"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/{payment_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Payment Status */
+    get: operations["get_payment_status"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/{payment_id}/confirm": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm Payment
+     * @description The payer is back from the provider's page: check the payment with the provider (never trust the
+     *     browser alone). The provider's notification may also arrive before or after this.
+     */
+    post: operations["confirm_payment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/invoices/{invoice_id}/pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Invoice Pdf
+     * @description The invoice, or the receipt once paid.
+     */
+    get: operations["invoice_pdf"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/invoices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Invoices */
+    get: operations["list_invoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Payments Summary */
+    get: operations["payments_summary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/invoices/{invoice_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Invoice */
+    get: operations["get_invoice"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/invoices/{invoice_id}/transfers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record Transfer
+     * @description Record money received by bank transfer.
+     */
+    post: operations["record_transfer"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/invoices/{invoice_id}/void": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Void Invoice */
+    post: operations["void_invoice"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/submissions/{submission_id}/invoices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Issue Invoice
+     * @description Issue a new invoice for an accepted manuscript whose previous one was voided.
+     */
+    post: operations["issue_invoice"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/{payment_id}/refunds": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Refund Payment
+     * @description Refund all or part of a payment. Online payments are refunded through their provider.
+     */
+    post: operations["refund_payment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/waiver-requests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Waiver Requests */
+    get: operations["list_waiver_requests"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/payments/waiver-requests/{waiver_id}/decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Decide Waiver */
+    post: operations["decide_waiver"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/journal/payment-settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Payment Settings */
+    get: operations["get_payment_settings"];
+    /** Update Payment Settings */
+    put: operations["update_payment_settings"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/v1/journal": {
     parameters: {
       query?: never;
@@ -1643,6 +1961,33 @@ export interface components {
       /** Attachments */
       attachments: components["schemas"]["FileOut"][];
     };
+    /**
+     * BillingOut
+     * @description The publication fee of one manuscript, for its authors and the finance managers.
+     */
+    BillingOut: {
+      /** Enabled */
+      enabled: boolean;
+      /** Fee Required */
+      fee_required: boolean;
+      /** Accepted */
+      accepted: boolean;
+      /** Currency */
+      currency: string;
+      /** Expected Fee */
+      expected_fee: string;
+      /** Invoices */
+      invoices: components["schemas"]["InvoiceOut"][];
+      /** Waivers */
+      waivers: components["schemas"]["WaiverOut"][];
+      /** Can Request Waiver */
+      can_request_waiver: boolean;
+      /** Waiver Policy */
+      waiver_policy: string;
+      /** Methods */
+      methods: components["schemas"]["MethodOption"][];
+      bank_details: components["schemas"]["Payee"] | null;
+    };
     /** CancelIn */
     CancelIn: {
       /**
@@ -1662,13 +2007,29 @@ export interface components {
       | "users.manage"
       | "audit.view"
       | "submissions.create"
-      | "submissions.view_all";
+      | "submissions.view_all"
+      | "payments.manage";
     /** ChangePasswordIn */
     ChangePasswordIn: {
       /** Current Password */
       current_password: string;
       /** New Password */
       new_password: string;
+    };
+    /** CheckoutIn */
+    CheckoutIn: {
+      /**
+       * Method
+       * @enum {string}
+       */
+      method: "card" | "paypal";
+    };
+    /** CheckoutOut */
+    CheckoutOut: {
+      /** Payment Id */
+      payment_id: number;
+      /** Redirect Url */
+      redirect_url: string;
     };
     /** ContributorIn */
     ContributorIn: {
@@ -2112,6 +2473,111 @@ export interface components {
       /** Roles */
       roles: components["schemas"]["Role"][];
     };
+    /** InvoiceOut */
+    InvoiceOut: {
+      /** Id */
+      id: number;
+      /** Submission Id */
+      submission_id: number;
+      /** Number */
+      number: string;
+      /** Status */
+      status: string;
+      /** Currency */
+      currency: string;
+      /** Amount */
+      amount: string;
+      /** Discount */
+      discount: string;
+      /** Discount Percent */
+      discount_percent: number;
+      /** Vat Percent */
+      vat_percent: string;
+      /** Tax */
+      tax: string;
+      /** Total */
+      total: string;
+      /** Refunded */
+      refunded: string;
+      /** Payer Name */
+      payer_name: string;
+      /** Payer Email */
+      payer_email: string;
+      /** Payer Organization */
+      payer_organization: string;
+      /** Payer Address */
+      payer_address: string;
+      /** Payer Tax Id */
+      payer_tax_id: string;
+      /** Description */
+      description: string;
+      /**
+       * Due Date
+       * Format: date
+       */
+      due_date: string;
+      /** Overdue */
+      overdue: boolean;
+      /**
+       * Issued At
+       * Format: date-time
+       */
+      issued_at: string;
+      /** Paid At */
+      paid_at: string | null;
+      /** Waived At */
+      waived_at: string | null;
+      /** Voided At */
+      voided_at: string | null;
+      /** Void Reason */
+      void_reason: string;
+      /** Pdf Url */
+      pdf_url: string;
+      /** Payments */
+      payments: components["schemas"]["PaymentOut"][];
+    };
+    /** InvoicePage */
+    InvoicePage: {
+      /** Items */
+      items: components["schemas"]["InvoiceRow"][];
+      /** Total */
+      total: number;
+    };
+    /** InvoiceRow */
+    InvoiceRow: {
+      /** Id */
+      id: number;
+      /** Number */
+      number: string;
+      /** Status */
+      status: string;
+      /** Overdue */
+      overdue: boolean;
+      /** Total */
+      total: string;
+      /** Currency */
+      currency: string;
+      /** Payer Name */
+      payer_name: string;
+      /**
+       * Due Date
+       * Format: date
+       */
+      due_date: string;
+      /**
+       * Issued At
+       * Format: date-time
+       */
+      issued_at: string;
+      /** Paid At */
+      paid_at: string | null;
+      /** Submission Id */
+      submission_id: number;
+      /** Submission Number */
+      submission_number: string | null;
+      /** Submission Title */
+      submission_title: string;
+    };
     /** JournalOut */
     JournalOut: {
       /** Id */
@@ -2254,6 +2720,49 @@ export interface components {
        */
       created_at: string;
     };
+    /** MethodAvailability */
+    MethodAvailability: {
+      /** Method */
+      method: string;
+      /** Label */
+      label: string;
+      /** Available */
+      available: boolean;
+      /**
+       * Reason
+       * @default
+       */
+      reason: string;
+    };
+    /** MethodOption */
+    MethodOption: {
+      /** Method */
+      method: string;
+      /** Label */
+      label: string;
+      /** Available */
+      available: boolean;
+      /** Reason */
+      reason: string;
+    };
+    /** Methods */
+    Methods: {
+      /**
+       * Card
+       * @default true
+       */
+      card: boolean;
+      /**
+       * Paypal
+       * @default true
+       */
+      paypal: boolean;
+      /**
+       * Bank Transfer
+       * @default true
+       */
+      bank_transfer: boolean;
+    };
     /** NewReviewer */
     NewReviewer: {
       /**
@@ -2311,6 +2820,222 @@ export interface components {
        * @default false
        */
       accept_cross_border_transfer: boolean;
+    };
+    /**
+     * Payee
+     * @description The journal's legal entity, printed on invoices and used for bank transfers.
+     */
+    Payee: {
+      /**
+       * Name
+       * @default
+       */
+      name: string;
+      /**
+       * Tax Id
+       * @default
+       */
+      tax_id: string;
+      /**
+       * Address
+       * @default
+       */
+      address: string;
+      /**
+       * Bank Name
+       * @default
+       */
+      bank_name: string;
+      /**
+       * Iban
+       * @default
+       */
+      iban: string;
+      /**
+       * Bic
+       * @default
+       */
+      bic: string;
+      /**
+       * Kbe
+       * @default
+       */
+      kbe: string;
+      /**
+       * Knp
+       * @default
+       */
+      knp: string;
+    };
+    /** PayerIn */
+    PayerIn: {
+      /** Payer Name */
+      payer_name: string;
+      /**
+       * Payer Email
+       * Format: email
+       */
+      payer_email: string;
+      /**
+       * Payer Organization
+       * @default
+       */
+      payer_organization: string;
+      /**
+       * Payer Address
+       * @default
+       */
+      payer_address: string;
+      /**
+       * Payer Tax Id
+       * @default
+       */
+      payer_tax_id: string;
+    };
+    /** PaymentOut */
+    PaymentOut: {
+      /** Id */
+      id: number;
+      /** Method */
+      method: string;
+      /** Provider */
+      provider: string;
+      /** Status */
+      status: string;
+      /** Amount */
+      amount: string;
+      /** Currency */
+      currency: string;
+      /** Refunded */
+      refunded: string;
+      /** Reference */
+      reference: string;
+      /** Failure Reason */
+      failure_reason: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Completed At */
+      completed_at: string | null;
+      /** Refunds */
+      refunds: components["schemas"]["RefundOut"][];
+    };
+    /** PaymentSettings */
+    PaymentSettings: {
+      /**
+       * Enabled
+       * @default false
+       */
+      enabled: boolean;
+      /**
+       * Currency
+       * @default KZT
+       */
+      currency: string;
+      /**
+       * Fee
+       * @default 0
+       */
+      fee: number | string;
+      /** Section Fees */
+      section_fees?: {
+        [key: string]: number | string;
+      };
+      /**
+       * Vat Percent
+       * @default 0
+       */
+      vat_percent: number | string;
+      /**
+       * Due Days
+       * @default 30
+       */
+      due_days: number;
+      /** Reminder Days */
+      reminder_days?: number[];
+      methods?: components["schemas"]["Methods"];
+      payee?: components["schemas"]["Payee"];
+      /**
+       * Invoice Note
+       * @default
+       */
+      invoice_note: string;
+      /**
+       * Waiver Policy
+       * @default
+       */
+      waiver_policy: string;
+    };
+    /** PaymentSettingsOut */
+    PaymentSettingsOut: {
+      /**
+       * Enabled
+       * @default false
+       */
+      enabled: boolean;
+      /**
+       * Currency
+       * @default KZT
+       */
+      currency: string;
+      /**
+       * Fee
+       * @default 0
+       */
+      fee: string;
+      /** Section Fees */
+      section_fees: {
+        [key: string]: string;
+      };
+      /**
+       * Vat Percent
+       * @default 0
+       */
+      vat_percent: string;
+      /**
+       * Due Days
+       * @default 30
+       */
+      due_days: number;
+      /** Reminder Days */
+      reminder_days: number[];
+      methods: components["schemas"]["Methods"];
+      payee: components["schemas"]["Payee"];
+      /**
+       * Invoice Note
+       * @default
+       */
+      invoice_note: string;
+      /**
+       * Waiver Policy
+       * @default
+       */
+      waiver_policy: string;
+      /** Version */
+      version: number;
+      /** Currencies */
+      currencies: string[];
+      /** Method Availability */
+      method_availability: components["schemas"]["MethodAvailability"][];
+    };
+    /** PaymentStatusOut */
+    PaymentStatusOut: {
+      /** Payment Id */
+      payment_id: number;
+      /** Status */
+      status: string;
+      /** Submission Id */
+      submission_id: number;
+      /** Invoice Number */
+      invoice_number: string;
+      /** Invoice Status */
+      invoice_status: string;
+      /** Amount */
+      amount: string;
+      /** Currency */
+      currency: string;
     };
     /**
      * Person
@@ -2493,6 +3218,33 @@ export interface components {
      * @enum {string}
      */
     QuestionType: "text" | "textarea" | "choice" | "checkboxes";
+    /** RefundIn */
+    RefundIn: {
+      /** Amount */
+      amount: number | string;
+      /** Reason */
+      reason: string;
+    };
+    /** RefundOut */
+    RefundOut: {
+      /** Id */
+      id: number;
+      /** Amount */
+      amount: string;
+      /** Reason */
+      reason: string;
+      /** Status */
+      status: string;
+      /** Failure Reason */
+      failure_reason: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Completed At */
+      completed_at: string | null;
+    };
     /** RegisterIn */
     RegisterIn: {
       /**
@@ -3146,6 +3898,17 @@ export interface components {
       /** Declined Share */
       declined_share: number | null;
     };
+    /** SummaryLine */
+    SummaryLine: {
+      /** Currency */
+      currency: string;
+      /** Status */
+      status: string;
+      /** Count */
+      count: number;
+      /** Amount */
+      amount: string;
+    };
     /** TemplateVariable */
     TemplateVariable: {
       /** Name */
@@ -3166,6 +3929,21 @@ export interface components {
       email: string;
       /** Full Name */
       full_name: string;
+    };
+    /** TransferIn */
+    TransferIn: {
+      /** Amount */
+      amount: number | string;
+      /**
+       * Reference
+       * @default
+       */
+      reference: string;
+      /**
+       * Paid On
+       * Format: date
+       */
+      paid_on: string;
     };
     /** UploadRequest */
     UploadRequest: {
@@ -3255,6 +4033,84 @@ export interface components {
       /** Recommend Only */
       recommend_only: boolean;
     };
+    /** VoidIn */
+    VoidIn: {
+      /** Reason */
+      reason: string;
+    };
+    /** WaiverDecisionIn */
+    WaiverDecisionIn: {
+      /** Approve */
+      approve: boolean;
+      /** Percent */
+      percent?: number | null;
+      /**
+       * Note
+       * @default
+       */
+      note: string;
+    };
+    /** WaiverIn */
+    WaiverIn: {
+      /** Percent */
+      percent: number;
+      /** Reason */
+      reason: string;
+    };
+    /** WaiverOut */
+    WaiverOut: {
+      /** Id */
+      id: number;
+      /** Submission Id */
+      submission_id: number;
+      /** Percent */
+      percent: number;
+      /** Reason */
+      reason: string;
+      /** Status */
+      status: string;
+      /** Approved Percent */
+      approved_percent: number | null;
+      /** Decision Note */
+      decision_note: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Decided At */
+      decided_at: string | null;
+    };
+    /** WaiverRow */
+    WaiverRow: {
+      /** Id */
+      id: number;
+      /** Submission Id */
+      submission_id: number;
+      /** Percent */
+      percent: number;
+      /** Reason */
+      reason: string;
+      /** Status */
+      status: string;
+      /** Approved Percent */
+      approved_percent: number | null;
+      /** Decision Note */
+      decision_note: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Decided At */
+      decided_at: string | null;
+      /** Submission Number */
+      submission_number: string | null;
+      /** Submission Title */
+      submission_title: string;
+      /** Requested By */
+      requested_by: string;
+    };
     /** WithdrawIn */
     WithdrawIn: {
       /** Reason */
@@ -3281,6 +4137,8 @@ export interface components {
       people: components["schemas"]["Person"][];
       /** Can Withdraw */
       can_withdraw: boolean;
+      /** Fee Settled */
+      fee_settled: boolean | null;
     };
   };
   responses: never;
@@ -3295,9 +4153,12 @@ export type AssignmentOut = components["schemas"]["AssignmentOut"];
 export type AuditEventOut = components["schemas"]["AuditEventOut"];
 export type AuthorAnswer = components["schemas"]["AuthorAnswer"];
 export type AuthorReviewOut = components["schemas"]["AuthorReviewOut"];
+export type BillingOut = components["schemas"]["BillingOut"];
 export type CancelIn = components["schemas"]["CancelIn"];
 export type Capability = components["schemas"]["Capability"];
 export type ChangePasswordIn = components["schemas"]["ChangePasswordIn"];
+export type CheckoutIn = components["schemas"]["CheckoutIn"];
+export type CheckoutOut = components["schemas"]["CheckoutOut"];
 export type ContributorIn = components["schemas"]["ContributorIn"];
 export type ContributorOrderIn = components["schemas"]["ContributorOrderIn"];
 export type ContributorOut = components["schemas"]["ContributorOut"];
@@ -3328,6 +4189,9 @@ export type FileUpdate = components["schemas"]["FileUpdate"];
 export type Genre = components["schemas"]["Genre"];
 export type InvitationPreviewIn = components["schemas"]["InvitationPreviewIn"];
 export type InviteIn = components["schemas"]["InviteIn"];
+export type InvoiceOut = components["schemas"]["InvoiceOut"];
+export type InvoicePage = components["schemas"]["InvoicePage"];
+export type InvoiceRow = components["schemas"]["InvoiceRow"];
 export type JournalOut = components["schemas"]["JournalOut"];
 export type JournalUpdate = components["schemas"]["JournalUpdate"];
 export type LetterIn = components["schemas"]["LetterIn"];
@@ -3337,11 +4201,20 @@ export type MemberOut = components["schemas"]["MemberOut"];
 export type MemberUpdate = components["schemas"]["MemberUpdate"];
 export type MessageCreate = components["schemas"]["MessageCreate"];
 export type MessageOut = components["schemas"]["MessageOut"];
+export type MethodAvailability = components["schemas"]["MethodAvailability"];
+export type MethodOption = components["schemas"]["MethodOption"];
+export type Methods = components["schemas"]["Methods"];
 export type NewReviewer = components["schemas"]["NewReviewer"];
 export type PageAuditEventOut = components["schemas"]["Page_AuditEventOut_"];
 export type PageMemberOut = components["schemas"]["Page_MemberOut_"];
 export type PageSubmissionSummary = components["schemas"]["Page_SubmissionSummary_"];
 export type PasswordResetConfirmIn = components["schemas"]["PasswordResetConfirmIn"];
+export type Payee = components["schemas"]["Payee"];
+export type PayerIn = components["schemas"]["PayerIn"];
+export type PaymentOut = components["schemas"]["PaymentOut"];
+export type PaymentSettings = components["schemas"]["PaymentSettings"];
+export type PaymentSettingsOut = components["schemas"]["PaymentSettingsOut"];
+export type PaymentStatusOut = components["schemas"]["PaymentStatusOut"];
 export type Person = components["schemas"]["Person"];
 export type Problem = components["schemas"]["Problem"];
 export type ProfileUpdate = components["schemas"]["ProfileUpdate"];
@@ -3352,6 +4225,8 @@ export type PublicationUpdate = components["schemas"]["PublicationUpdate"];
 export type QuestionInput = components["schemas"]["Question-Input"];
 export type QuestionOutput = components["schemas"]["Question-Output"];
 export type QuestionType = components["schemas"]["QuestionType"];
+export type RefundIn = components["schemas"]["RefundIn"];
+export type RefundOut = components["schemas"]["RefundOut"];
 export type RegisterIn = components["schemas"]["RegisterIn"];
 export type RemindIn = components["schemas"]["RemindIn"];
 export type ReviewFilesIn = components["schemas"]["ReviewFilesIn"];
@@ -3383,15 +4258,22 @@ export type SubmissionSettingsOut = components["schemas"]["SubmissionSettingsOut
 export type SubmissionSummary = components["schemas"]["SubmissionSummary"];
 export type SubmissionUpdate = components["schemas"]["SubmissionUpdate"];
 export type Suggestion = components["schemas"]["Suggestion"];
+export type SummaryLine = components["schemas"]["SummaryLine"];
 export type TemplateVariable = components["schemas"]["TemplateVariable"];
 export type TokenIn = components["schemas"]["TokenIn"];
 export type TokenInfoOut = components["schemas"]["TokenInfoOut"];
+export type TransferIn = components["schemas"]["TransferIn"];
 export type UploadRequest = components["schemas"]["UploadRequest"];
 export type UploadTarget = components["schemas"]["UploadTarget"];
 export type UploadTicketOut = components["schemas"]["UploadTicketOut"];
 export type UserOut = components["schemas"]["UserOut"];
 export type UserSummary = components["schemas"]["UserSummary"];
 export type Viewer = components["schemas"]["Viewer"];
+export type VoidIn = components["schemas"]["VoidIn"];
+export type WaiverDecisionIn = components["schemas"]["WaiverDecisionIn"];
+export type WaiverIn = components["schemas"]["WaiverIn"];
+export type WaiverOut = components["schemas"]["WaiverOut"];
+export type WaiverRow = components["schemas"]["WaiverRow"];
 export type WithdrawIn = components["schemas"]["WithdrawIn"];
 export type WorkflowOut = components["schemas"]["WorkflowOut"];
 export type $defs = Record<string, never>;
@@ -14220,6 +15102,2052 @@ export interface operations {
       };
     };
   };
+  get_billing: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        submission_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BillingOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  request_waiver: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        submission_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WaiverIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BillingOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  change_payer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        invoice_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PayerIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoiceOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  start_checkout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        invoice_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CheckoutIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheckoutOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  get_payment_status: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        payment_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaymentStatusOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  confirm_payment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        payment_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaymentStatusOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  invoice_pdf: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        invoice_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  list_invoices: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        overdue?: boolean;
+        q?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoicePage"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  payments_summary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SummaryLine"][];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  get_invoice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        invoice_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoiceOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  record_transfer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        invoice_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TransferIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoiceOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  void_invoice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        invoice_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VoidIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoiceOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  issue_invoice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        submission_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoiceOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  refund_payment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        payment_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RefundIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvoiceOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  list_waiver_requests: {
+    parameters: {
+      query?: {
+        status?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WaiverRow"][];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  decide_waiver: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        waiver_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WaiverDecisionIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WaiverOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  get_payment_settings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaymentSettingsOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  update_payment_settings: {
+    parameters: {
+      query?: never;
+      header?: {
+        "if-match"?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PaymentSettings"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaymentSettingsOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   get_public_journal: {
     parameters: {
       query?: never;
@@ -14400,7 +17328,11 @@ export const capabilityValues: ReadonlyArray<FlattenedDeepRequired<components>["
   "audit.view",
   "submissions.create",
   "submissions.view_all",
+  "payments.manage",
 ];
+export const checkoutInMethodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>["schemas"]["CheckoutIn"]["method"]
+> = ["card", "paypal"];
 export const decisionValues: ReadonlyArray<FlattenedDeepRequired<components>["schemas"]["Decision"]> = [
   "send_to_review",
   "accept",

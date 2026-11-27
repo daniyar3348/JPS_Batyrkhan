@@ -153,3 +153,6 @@ class WorkflowOut(Defaults):
     # Who the viewer can add to a discussion.
     people: list[Person]
     can_withdraw: bool
+    # After acceptance: whether the publication fee is settled (paid, waived or not charged), so the
+    # article may be published. Nothing else about payments reaches the editors. None before acceptance.
+    fee_settled: bool | None
