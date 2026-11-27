@@ -22,6 +22,9 @@ class FileStage:
     REVIEW = "review"  # the copy reviewers of a round receive (author metadata removed)
     REVISION = "revision"  # revised files the author sends during a review round
     REVIEW_ATTACHMENT = "review_attachment"  # a reviewer's file sent with their review
+    COPYEDIT = "copyedit"  # copyedited text, and the authors' answers to the copyeditor
+    PRODUCTION = "production"  # files for typesetting: final text, figures, layout sources
+    GALLEY = "galley"  # what readers download: PDF, HTML, XML (see publishing.Galley)
 
 
 class SubmissionFile(TimestampMixin, Base):

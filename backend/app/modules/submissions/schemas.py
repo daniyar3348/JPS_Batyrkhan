@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints, 
 
 from app.core.errors import FieldError
 from app.modules.files.models import FileStatus, SubmissionFile
-from app.modules.files.types import Genre
+from app.modules.files.types import UPLOAD_GENRES, Genre
 from app.modules.identity.schemas import Affiliation, Country, Name, OptionalName, UserSummary
 from app.modules.identity.validation import normalize_orcid
 from app.modules.similarity.models import SimilarityCheck
@@ -119,10 +119,24 @@ class UploadRequest(BaseModel):
     size: int = Field(gt=0)
     genre: Genre
 
+    @field_validator("genre")
+    @classmethod
+    def _choosable(cls, value: Genre) -> Genre:
+        if value not in UPLOAD_GENRES:
+            raise ValueError("Galleys are added to the publication, not uploaded here")
+        return value
+
 
 class FileUpdate(BaseModel):
     genre: Genre | None = None
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)] | None = None
+
+    @field_validator("genre")
+    @classmethod
+    def _choosable(cls, value: Genre | None) -> Genre | None:
+        if value is not None and value not in UPLOAD_GENRES:
+            raise ValueError("Galleys are added to the publication, not uploaded here")
+        return value
 
 
 # ---------------------------------------------------------------------------- outputs
@@ -277,12 +291,16 @@ class SimilarityCheckOut(BaseModel):
 class Viewer(BaseModel):
     """What the signed-in user may do with this submission."""
 
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
     is_author: bool
     is_editor: bool
     can_edit: bool
     can_manage: bool
     can_decide: bool
     recommend_only: bool
+    # copyeditor, layout_editor, proofreader: the viewer works on the accepted article in these roles.
+    production_roles: list[str] = Field(default_factory=list)
 
     @classmethod
     def of(cls, access: Access) -> Viewer:
@@ -293,6 +311,7 @@ class Viewer(BaseModel):
             can_manage=access.can_manage,
             can_decide=access.can_decide,
             recommend_only=access.recommend_only,
+            production_roles=sorted(access.production_roles),
         )
 
 

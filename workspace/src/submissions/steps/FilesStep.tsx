@@ -20,7 +20,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, errorMessage, unwrap } from "../../api";
 import { showRequestError } from "../../lib/forms";
-import { FILE_STATUS, formatSize, GENRE_HELP, GENRE_LABELS } from "../labels";
+import { FILE_STATUS, formatSize, GENRE_HELP, GENRE_LABELS, UPLOAD_GENRES } from "../labels";
 import { submissionKey } from "../queries";
 import { sendToStorage } from "../upload";
 
@@ -31,7 +31,7 @@ interface Upload {
   error?: string;
 }
 
-const GENRES = Object.keys(GENRE_LABELS) as Genre[];
+const GENRES = UPLOAD_GENRES;
 
 function extension(name: string): string {
   const dot = name.lastIndexOf(".");

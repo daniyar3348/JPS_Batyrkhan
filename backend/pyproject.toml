@@ -9,8 +9,10 @@ dependencies = [
     "argon2-cffi>=25.1.0",
     "asyncpg>=0.32.0",
     "boto3>=1.44.12",
+    "defusedxml>=0.7.1",
     "fastapi>=0.165.0",
     "fpdf2>=2.9.0",
+    "httpx>=0.28.1",
     "pydantic-settings>=2.16.3",
     "pydantic[email]>=2.14.4",
     "pypdf>=7.2.0",
@@ -22,13 +24,13 @@ dependencies = [
 dev = [
     "asgi-lifespan>=2.1.0",
     "boto3-stubs[s3]>=1.44.12",
-    "httpx>=0.28.1",
     "import-linter>=2.17",
     "moto[server]>=5.2.6",
     "mypy>=2.4.1",
     "pytest>=9.2.0",
     "pytest-asyncio>=1.5.0",
     "ruff>=0.17.6",
+    "types-defusedxml>=0.7.0.20260504",
 ]
 
 [tool.ruff]
@@ -81,9 +83,14 @@ source_modules = ["app.modules"]
 forbidden_modules = ["app.api", "app.main", "app.worker"]
 
 [[tool.importlinter.contracts]]
-name = "Editorial modules are layered: workflow uses review, review uses submissions"
+name = "Editorial modules are layered: publishing uses workflow, workflow review, review submissions"
 type = "layers"
-layers = ["app.modules.workflow", "app.modules.review", "app.modules.submissions"]
+layers = [
+    "app.modules.publishing",
+    "app.modules.workflow",
+    "app.modules.review",
+    "app.modules.submissions",
+]
 
 [[tool.importlinter.contracts]]
 name = "Peer review knows nothing of payments, and payments nothing of review"

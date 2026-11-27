@@ -342,9 +342,9 @@ async def test_who_can_review(office: Office, make_user: UserFactory, run_jobs):
     assert problem(not_reviewer)["code"] == "not_a_reviewer"
     # The manuscript's editor.
     await make_user("both@example.org", [Role.REVIEWER, Role.SECTION_EDITOR])
-    editors = await office.chief.get(office.url("/editor-candidates"))
+    editors = await office.chief.get(office.url("/participant-candidates?role=editor"))
     both = next(u for u in editors.json() if u["email"] == "both@example.org")
-    await office.chief.post(office.url("/editors"), json={"user_id": both["id"]})
+    await office.chief.post(office.url("/participants"), json={"user_id": both["id"]})
     assert (
         problem(await office.chief.post(url, json={"reviewer_id": both["id"]}))["code"]
         == "reviewer_is_editor"
@@ -480,9 +480,9 @@ async def test_reminders_are_sent_once(
 
 async def test_recommend_only_editors_recommend(office: Office, run_jobs, outbox: list[EmailMessage]):
     # The chief makes the section editor recommend-only.
-    await office.chief.delete(office.url(f"/editors/{office.editor_user.id}"))
+    await office.chief.delete(office.url(f"/participants/editor/{office.editor_user.id}"))
     assigned = await office.chief.post(
-        office.url("/editors"), json={"user_id": office.editor_user.id, "recommend_only": True}
+        office.url("/participants"), json={"user_id": office.editor_user.id, "recommend_only": True}
     )
     assert assigned.status_code == 201, assigned.text
     assert "and recommend a decision" in (await office.mail("editor@example.org"))[-1].text

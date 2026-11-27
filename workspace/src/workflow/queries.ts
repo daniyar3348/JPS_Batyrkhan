@@ -16,12 +16,16 @@ export function useWorkflow(id: number, enabled = true) {
       ),
     enabled,
     // Reviewers' copies and uploads are checked by the worker: look again until they are ready.
-    refetchInterval: (query) =>
-      query.state.data?.rounds.some((round) =>
-        [...round.review_files, ...round.revision_files].some((file) => BUSY.has(file.status)),
-      )
-        ? 1500
-        : false,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data) return false;
+      const files = [
+        ...data.rounds.flatMap((round) => [...round.review_files, ...round.revision_files]),
+        ...data.copyedit_files,
+        ...data.production_files,
+      ];
+      return files.some((file) => BUSY.has(file.status)) ? 1500 : false;
+    },
   });
 }
 

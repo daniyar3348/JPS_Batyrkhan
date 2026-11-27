@@ -16,6 +16,7 @@ from app.modules.payments.models import (
     Refund,
     WaiverRequest,
 )
+from app.modules.publishing.models import DoiDeposit, Galley, Issue, PublishedArticle
 from app.modules.review.models import ReviewAssignment, ReviewForm, ReviewReminder, ReviewRound
 from app.modules.similarity.models import SimilarityCheck
 from app.modules.submissions.models import (
@@ -41,13 +42,16 @@ __all__ = [
     "Discussion",
     "DiscussionMessage",
     "DiscussionParticipant",
+    "DoiDeposit",
     "EditorialDecision",
     "EmailLog",
     "EmailTemplate",
     "FileRevision",
+    "Galley",
     "Invoice",
     "InvoiceCounter",
     "InvoiceReminder",
+    "Issue",
     "Job",
     "Journal",
     "Participant",
@@ -55,6 +59,7 @@ __all__ = [
     "PeriodicRun",
     "ProviderEvent",
     "Publication",
+    "PublishedArticle",
     "Refund",
     "ReviewAssignment",
     "ReviewForm",

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
@@ -70,12 +70,14 @@ class DecisionOut(Defaults):
 
 class EditorOut(Defaults):
     user: UserSummary
+    role: str
     recommend_only: bool
     assigned_at: datetime
 
 
 class EditorIn(BaseModel):
     user_id: int
+    role: Literal["editor", "copyeditor", "layout_editor", "proofreader"] = "editor"
     recommend_only: bool = False
     notify: bool = True
 
@@ -156,3 +158,7 @@ class WorkflowOut(Defaults):
     # After acceptance: whether the publication fee is settled (paid, waived or not charged), so the
     # article may be published. Nothing else about payments reaches the editors. None before acceptance.
     fee_settled: bool | None
+    # Copyediting and production files the viewer may see, and where they may add files.
+    copyedit_files: list[FileOut]
+    production_files: list[FileOut]
+    can_upload: dict[str, bool]

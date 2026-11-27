@@ -2,22 +2,27 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.deps import get_db, get_settings, get_storage
 from app.core.errors import Forbidden, NotFound
 from app.core.storage import Storage
+from app.modules.files.models import FileStage
 from app.modules.identity.schemas import UserSummary
 from app.modules.journals.deps import Principal, get_principal
 from app.modules.notifications.service import email_log
 from app.modules.review.schemas import EmailOut
 from app.modules.review.views import round_views
-from app.modules.submissions.models import ParticipantRole, Submission, SubmissionStatus
+from app.modules.submissions.models import Submission, SubmissionStatus
 from app.modules.submissions.policies import Access, access_for
-from app.modules.submissions.schemas import FileOut, Viewer
+from app.modules.submissions.schemas import FileOut, UploadRequest, UploadTarget, UploadTicketOut, Viewer
 from app.modules.submissions.service import SubmissionService
+from app.modules.workflow import stage_files
 from app.modules.workflow.models import Discussion, EditorialDecision
 from app.modules.workflow.schemas import (
     DecisionIn,
@@ -124,25 +129,39 @@ def discussion_out(discussion: Discussion) -> DiscussionOut:
 async def workflow_view(
     service: WorkflowService, principal: Principal, submission: Submission, access: Access
 ) -> WorkflowOut:
-    rounds = await round_views(service.review, submission, access)
+    # Copyeditors, typesetters and proofreaders see neither the review nor the decisions.
+    in_review_loop = access.is_editor or access.is_author
+    rounds = await round_views(service.review, submission, access) if in_review_loop else []
     numbers = {r.id: r.number for r in rounds}
     decisions = [
         decision_out(d, access, numbers)
         for d in await service.decisions(submission)
-        if access.is_editor or not d.is_recommendation
+        if in_review_loop and (access.is_editor or not d.is_recommendation)
     ]
     editors = None
-    if access.is_editor:
+    if access.is_editor or access.production_roles:
+        # Everyone working on the manuscript, by role; not shown to the authors.
         editors = [
-            EditorOut(user=UserSummary.of(p.user), recommend_only=p.recommend_only, assigned_at=p.created_at)
+            EditorOut(
+                user=UserSummary.of(p.user),
+                role=p.role,
+                recommend_only=p.recommend_only,
+                assigned_at=p.created_at,
+            )
             for p in submission.participants
-            if p.role == ParticipantRole.EDITOR
         ]
     people = [
         Person(user=UserSummary.of(user), role=role)
         for user, role in await service.people(principal.journal, submission)
         if user.id != principal.user.id
     ]
+    stage_lists = {
+        stage: [
+            FileOut.of(f, files_url=stage_files.files_url(submission.id, stage))
+            for f in await service.stage_files.list(submission, access, stage)
+        ]
+        for stage in stage_files.STAGES
+    }
     withdraw = RULES[Decision.WITHDRAW]
     return WorkflowOut(
         stage=submission.stage,
@@ -160,6 +179,9 @@ async def workflow_view(
         and submission.stage in withdraw.stages
         and submission.status in withdraw.statuses,
         fee_settled=await service.payments.fee_settled(principal.journal, submission),
+        copyedit_files=stage_lists[FileStage.COPYEDIT],
+        production_files=stage_lists[FileStage.PRODUCTION],
+        can_upload={stage: stage_files.may_upload(access, stage) for stage in stage_files.STAGES},
     )
 
 
@@ -227,52 +249,129 @@ async def withdraw_submission(
     return await workflow_view(service, principal, submission, access)
 
 
-# ---------------------------------------------------------------------- editors
+# ---------------------------------------------------------------------- people working on it
 
 
-@router.get("/editor-candidates")
-async def list_editor_candidates(
+@router.get("/participant-candidates")
+async def list_participant_candidates(
     submission_id: int,
+    role: Literal["editor", "copyeditor", "layout_editor", "proofreader"] = "editor",
     principal: Principal = Depends(get_principal),
     submissions: SubmissionService = Depends(get_submission_service),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> list[UserSummary]:
-    """The journal's editors who could be assigned to this manuscript."""
+    """People with the journal role for this kind of work who could be assigned to the manuscript."""
     submission, access = await _load(submissions, principal, submission_id)
-    if not access.can_decide:
+    if not access.can_manage:
         raise Forbidden()
-    return [UserSummary.of(u) for u in await service.editor_candidates(principal.journal, submission)]
+    return [UserSummary.of(u) for u in await service.candidates(principal.journal, submission, role)]
 
 
-@router.post("/editors", status_code=201)
-async def assign_editor(
+@router.post("/participants", status_code=201)
+async def assign_participant(
     submission_id: int,
     data: EditorIn,
     principal: Principal = Depends(get_principal),
     submissions: SubmissionService = Depends(get_submission_service),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> WorkflowOut:
+    """Assign an editor, copyeditor, layout editor or proofreader."""
     submission, access = await _load(submissions, principal, submission_id)
-    await service.assign_editor(principal.journal, submission, access, data, principal.user)
+    await service.assign(principal.journal, submission, access, data, principal.user)
     await service.db.commit()
     return await workflow_view(service, principal, submission, access_for(principal, submission))
 
 
-@router.delete("/editors/{user_id}")
-async def unassign_editor(
+@router.delete("/participants/{role}/{user_id}")
+async def unassign_participant(
     submission_id: int,
+    role: Literal["editor", "copyeditor", "layout_editor", "proofreader"],
     user_id: int,
     principal: Principal = Depends(get_principal),
     submissions: SubmissionService = Depends(get_submission_service),
     service: WorkflowService = Depends(get_workflow_service),
 ) -> WorkflowOut:
     submission, access = await _load(submissions, principal, submission_id)
-    await service.unassign_editor(principal.journal, submission, access, user_id, principal.user)
+    await service.unassign(principal.journal, submission, access, user_id, role, principal.user)
     await service.db.commit()
     access = access_for(principal, submission)
     if not access.can_view:
         raise NotFound("Submission not found.")  # the editor removed themselves
     return await workflow_view(service, principal, submission, access)
+
+
+# ---------------------------------------------------------------------- copyediting and production files
+
+StageName = Literal["copyedit", "production"]
+
+
+@router.post("/stage-files/{stage}/uploads", status_code=201)
+async def request_stage_upload(
+    submission_id: int,
+    stage: StageName,
+    data: UploadRequest,
+    principal: Principal = Depends(get_principal),
+    submissions: SubmissionService = Depends(get_submission_service),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> UploadTicketOut:
+    submission, access = await _load(submissions, principal, submission_id)
+    record, ticket = await service.stage_files.request_upload(
+        principal.journal, submission, access, stage, data, principal.user
+    )
+    await service.db.commit()
+    return UploadTicketOut(
+        file=FileOut.of(record, files_url=stage_files.files_url(submission.id, stage)),
+        upload=UploadTarget(
+            url=ticket.url, method=ticket.method, headers=ticket.headers, expires_at=ticket.expires_at
+        ),
+    )
+
+
+@router.post("/stage-files/{stage}/{file_id}/complete")
+async def complete_stage_upload(
+    submission_id: int,
+    stage: StageName,
+    file_id: int,
+    principal: Principal = Depends(get_principal),
+    submissions: SubmissionService = Depends(get_submission_service),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> FileOut:
+    submission, access = await _load(submissions, principal, submission_id)
+    record = await service.stage_files.get(submission, access, stage, file_id)
+    if not stage_files.may_upload(access, stage):
+        raise Forbidden()
+    record = await service.files.complete_upload(submission.id, record.id)
+    await service.db.commit()
+    return FileOut.of(record, files_url=stage_files.files_url(submission.id, stage))
+
+
+@router.delete("/stage-files/{stage}/{file_id}", status_code=204)
+async def delete_stage_file(
+    submission_id: int,
+    stage: StageName,
+    file_id: int,
+    principal: Principal = Depends(get_principal),
+    submissions: SubmissionService = Depends(get_submission_service),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> Response:
+    submission, access = await _load(submissions, principal, submission_id)
+    await service.stage_files.delete(submission, access, stage, file_id, principal.user)
+    await service.db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/stage-files/{stage}/{file_id}/download", status_code=302, response_class=RedirectResponse)
+async def download_stage_file(
+    submission_id: int,
+    stage: StageName,
+    file_id: int,
+    principal: Principal = Depends(get_principal),
+    submissions: SubmissionService = Depends(get_submission_service),
+    service: WorkflowService = Depends(get_workflow_service),
+) -> RedirectResponse:
+    submission, access = await _load(submissions, principal, submission_id)
+    record = await service.stage_files.get(submission, access, stage, file_id)
+    return RedirectResponse(service.files.download_url(record), status_code=302)
 
 
 # ---------------------------------------------------------------------- discussions

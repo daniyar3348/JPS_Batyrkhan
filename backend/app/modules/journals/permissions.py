@@ -29,11 +29,15 @@ class Capability(StrEnum):
     SUBMISSIONS_VIEW_ALL = "submissions.view_all"
     # Fees, invoices, payments, refunds and waiver requests. Editors never get it (editorial independence).
     PAYMENTS_MANAGE = "payments.manage"
+    # Issues, publishing settings and DOI registration. Articles are published by their deciding editors.
+    PUBLISHING_MANAGE = "publishing.manage"
 
 
 ROLE_CAPABILITIES: dict[Role, frozenset[Capability]] = {
     Role.ADMIN: frozenset(Capability),
-    Role.EDITOR_IN_CHIEF: frozenset({Capability.USERS_VIEW, Capability.SUBMISSIONS_VIEW_ALL}),
+    Role.EDITOR_IN_CHIEF: frozenset(
+        {Capability.USERS_VIEW, Capability.SUBMISSIONS_VIEW_ALL, Capability.PUBLISHING_MANAGE}
+    ),
     Role.SECTION_EDITOR: frozenset(),
     Role.REVIEWER: frozenset(),
     Role.AUTHOR: frozenset({Capability.SUBMISSIONS_CREATE}),

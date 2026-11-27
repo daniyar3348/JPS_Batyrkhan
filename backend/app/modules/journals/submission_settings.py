@@ -7,7 +7,7 @@ from typing import Annotated, Self
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from app.core.config import Settings
-from app.modules.files.types import ALLOWED_EXTENSIONS
+from app.modules.files.types import ALLOWED_EXTENSIONS, UPLOAD_GENRES
 from app.modules.journals.models import Journal
 
 ChecklistItem = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
@@ -66,6 +66,8 @@ class SubmissionSettingsOut(SubmissionSettings):
             version=journal.version,
             similarity_available=settings.similarity_provider != "disabled",
             allowed_file_types={
-                genre.value: list(extensions) for genre, extensions in ALLOWED_EXTENSIONS.items()
+                genre.value: list(extensions)
+                for genre, extensions in ALLOWED_EXTENSIONS.items()
+                if genre in UPLOAD_GENRES
             },
         )

@@ -16,4 +16,5 @@ RUN npm run build --workspace @jps/workspace
 FROM nginx:1.29-alpine
 COPY deploy/nginx/workspace.conf /etc/nginx/conf.d/default.conf
 COPY deploy/nginx/proxy-api.inc /etc/nginx/conf.d/proxy-api.inc
+COPY deploy/nginx/proxy-public-cache.inc /etc/nginx/conf.d/proxy-public-cache.inc
 COPY --from=build /src/workspace/dist /usr/share/nginx/html

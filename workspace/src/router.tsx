@@ -103,6 +103,45 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        path: "production",
+        lazy: async () => ({
+          Component: (await import("./production/ProductionWorkPage")).ProductionWorkPage,
+        }),
+      },
+      {
+        // Issues: listed to the editors; created, published and set up by those with publishing.manage.
+        path: "publishing",
+        children: [
+          {
+            path: "issues",
+            lazy: async () => ({ Component: (await import("./publishing/IssuesPage")).IssuesPage }),
+          },
+          {
+            path: "issues/:id",
+            lazy: async () => ({ Component: (await import("./publishing/IssuePage")).IssuePage }),
+          },
+          {
+            element: <CapabilityOutlet />,
+            children: [
+              {
+                path: "settings",
+                handle: requires("publishing.manage"),
+                lazy: async () => ({
+                  Component: (await import("./publishing/PublishingSettingsPage")).PublishingSettingsPage,
+                }),
+              },
+              {
+                path: "doi",
+                handle: requires("publishing.manage"),
+                lazy: async () => ({
+                  Component: (await import("./publishing/DoiDepositsPage")).DoiDepositsPage,
+                }),
+              },
+            ],
+          },
+        ],
+      },
+      {
         path: "editorial",
         lazy: async () => ({
           Component: (await import("./submissions/EditorialQueuePage")).EditorialQueuePage,

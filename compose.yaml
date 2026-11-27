@@ -30,6 +30,8 @@ x-backend: &backend
     JPS_SIMILARITY_PROVIDER: fake
     # A pretend card payment page, so the whole payment flow can be tried without a provider account.
     JPS_PAYMENTS_TEST_PROVIDER: "true"
+    # DOIs are assigned and "registered" without contacting Crossref, so publishing can be tried end to end.
+    JPS_CROSSREF_MODE: fake
   volumes:
     - file-data:/app/var/storage
   depends_on:

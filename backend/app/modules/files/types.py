@@ -15,6 +15,12 @@ class Genre(StrEnum):
     TABLE = "table"
     SUPPLEMENTARY = "supplementary"
     COVER_LETTER = "cover_letter"
+    # What readers download (added in production, never by authors in the submission wizard).
+    GALLEY = "galley"
+
+
+# Genres a person may choose when uploading; galleys are added through the publication instead.
+UPLOAD_GENRES = frozenset(Genre) - {Genre.GALLEY}
 
 
 @dataclass(frozen=True)
@@ -32,6 +38,10 @@ FILE_TYPES: dict[str, FileType] = {
     ".tex": FileType("application/x-tex", "text"),
     ".bib": FileType("application/x-bibtex", "text"),
     ".txt": FileType("text/plain", "text"),
+    # Galleys: readers' formats. HTML is always downloaded, never shown inline from our domain.
+    ".html": FileType("text/html", "text"),
+    ".xml": FileType("application/xml", "text"),
+    ".epub": FileType("application/epub+zip", "zip"),
     ".csv": FileType("text/csv", "text"),
     ".xlsx": FileType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "zip"),
     ".xls": FileType("application/vnd.ms-excel", "ole"),
@@ -57,6 +67,7 @@ ALLOWED_EXTENSIONS: dict[Genre, tuple[str, ...]] = {
     Genre.TABLE: (".docx", ".doc", ".odt", ".xlsx", ".xls", ".ods", ".csv", ".pdf"),
     Genre.SUPPLEMENTARY: tuple(FILE_TYPES),
     Genre.COVER_LETTER: (*_DOCUMENTS, ".txt"),
+    Genre.GALLEY: (".pdf", ".html", ".xml", ".epub"),
 }
 
 _SIGNATURES: dict[str, tuple[bytes, ...]] = {

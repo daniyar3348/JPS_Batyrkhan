@@ -16,6 +16,7 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   IconAdjustments,
   IconBook2,
+  IconBooks,
   IconCash,
   IconChecklist,
   IconChevronDown,
@@ -28,11 +29,14 @@ import {
   IconLogout,
   IconMail,
   IconMessageCheck,
+  IconPencil,
   IconReceipt,
   IconSettings,
+  IconSettings2,
   IconStack2,
   IconUser,
   IconUsers,
+  IconWorldWww,
 } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -69,7 +73,35 @@ const MAIN_NAV: NavItem[] = [
     icon: <IconStack2 size={18} />,
     visible: (me) => can(me, "submissions.view_all") || hasRole(me, "section_editor"),
   },
+  {
+    to: "/production",
+    label: "Production work",
+    icon: <IconPencil size={18} />,
+    visible: (me) => hasRole(me, "copyeditor") || hasRole(me, "layout_editor") || hasRole(me, "proofreader"),
+  },
   { to: "/profile", label: "My profile", icon: <IconUser size={18} /> },
+];
+
+const PUBLISHING_NAV: NavItem[] = [
+  {
+    to: "/publishing/issues",
+    label: "Issues",
+    icon: <IconBooks size={18} />,
+    visible: (me) =>
+      can(me, "publishing.manage") || can(me, "submissions.view_all") || hasRole(me, "section_editor"),
+  },
+  {
+    to: "/publishing/doi",
+    label: "DOI registration",
+    icon: <IconWorldWww size={18} />,
+    capability: "publishing.manage",
+  },
+  {
+    to: "/publishing/settings",
+    label: "Publishing settings",
+    icon: <IconSettings2 size={18} />,
+    capability: "publishing.manage",
+  },
 ];
 
 const FINANCE_NAV: NavItem[] = [
@@ -152,6 +184,7 @@ export function AppLayout() {
   const allowed = (item: NavItem) =>
     (!item.capability || can(me, item.capability)) && (!item.visible || item.visible(me));
   const mainItems = MAIN_NAV.filter(allowed);
+  const publishingItems = PUBLISHING_NAV.filter(allowed);
   const financeItems = FINANCE_NAV.filter(allowed);
   const adminItems = ADMIN_NAV.filter(allowed);
   const isActive = (item: NavItem) =>
@@ -230,6 +263,14 @@ export function AppLayout() {
       <AppShell.Navbar p="sm">
         <AppShell.Section grow component={ScrollArea}>
           <Stack gap={2}>{mainItems.map(renderItem)}</Stack>
+          {publishingItems.length > 0 ? (
+            <>
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase" mt="lg" mb={6} px="sm">
+                Publishing
+              </Text>
+              <Stack gap={2}>{publishingItems.map(renderItem)}</Stack>
+            </>
+          ) : null}
           {financeItems.length > 0 ? (
             <>
               <Text size="xs" fw={700} c="dimmed" tt="uppercase" mt="lg" mb={6} px="sm">

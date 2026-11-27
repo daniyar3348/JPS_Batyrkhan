@@ -88,6 +88,23 @@ export const DECISION_LOOK: Record<string, { color: string; variant: "filled" | 
   recommend_revisions: { color: "orange", variant: "light" },
   recommend_resubmit: { color: "orange", variant: "light" },
   recommend_decline: { color: "red", variant: "light" },
+  send_to_production: { color: "teal", variant: "filled" },
+  back_to_copyediting: { color: "gray", variant: "light" },
+};
+
+/** People who work on a manuscript, by their part in it. */
+export const PARTICIPANT_ROLES = ["editor", "copyeditor", "layout_editor", "proofreader"] as const;
+export type ParticipantRole = (typeof PARTICIPANT_ROLES)[number];
+
+export const PARTICIPANT_LABELS: Record<ParticipantRole, { one: string; many: string; help: string }> = {
+  editor: { one: "Editor", many: "Editors", help: "Handles the manuscript: review and decisions." },
+  copyeditor: { one: "Copyeditor", many: "Copyeditors", help: "Edits the accepted text with the authors." },
+  layout_editor: {
+    one: "Layout editor",
+    many: "Layout editors",
+    help: "Typesets the article and adds the galleys.",
+  },
+  proofreader: { one: "Proofreader", many: "Proofreaders", help: "Checks the galleys before publication." },
 };
 
 /** Today as YYYY-MM-DD, for date inputs. */

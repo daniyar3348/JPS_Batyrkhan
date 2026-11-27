@@ -17,7 +17,9 @@ import {
 } from "@mantine/core";
 import {
   IconAlertCircle,
+  IconBook,
   IconCircleCheck,
+  IconEdit,
   IconFileText,
   IconHistory,
   IconMessages,
@@ -35,14 +37,16 @@ import { formatDateTime } from "../lib/format";
 import { notifySaved, showRequestError } from "../lib/forms";
 import { FeePanel } from "../payments/FeePanel";
 import { useBilling } from "../payments/queries";
+import { PublicationPanel } from "../publishing/PublicationPanel";
 import { AuthorReviews } from "../workflow/AuthorReviews";
 import { DecisionModal } from "../workflow/DecisionModal";
 import { Discussions } from "../workflow/Discussions";
-import { EditorsCard } from "../workflow/EditorsCard";
 import { DecisionsList, EmailLog } from "../workflow/History";
 import { DECISION_LOOK, STAGE_LABELS, STAGES } from "../workflow/labels";
+import { ParticipantsCard } from "../workflow/ParticipantsCard";
 import { useWorkflow, workflowKey } from "../workflow/queries";
 import { ReviewRounds } from "../workflow/ReviewRounds";
+import { StageFilesCard } from "../workflow/StageFilesCard";
 import { statusLook } from "./labels";
 import { submissionKey, useSubmission } from "./queries";
 import { SubmissionSummaryCards } from "./SubmissionSummaryCards";
@@ -138,7 +142,11 @@ function StageProgress({ workflow }: { workflow: WorkflowOut }) {
   const ended = workflow.status === "declined" || workflow.status === "withdrawn";
   return (
     <Stepper
-      active={STAGES.indexOf(workflow.stage as (typeof STAGES)[number])}
+      active={
+        workflow.status === "published"
+          ? STAGES.length
+          : STAGES.indexOf(workflow.stage as (typeof STAGES)[number])
+      }
       size="xs"
       color={ended ? "gray" : undefined}
     >
@@ -146,6 +154,29 @@ function StageProgress({ workflow }: { workflow: WorkflowOut }) {
         <Stepper.Step key={stage} label={STAGE_LABELS[stage]} />
       ))}
     </Stepper>
+  );
+}
+
+const AFTER_ACCEPTANCE = new Set(["copyediting", "production"]);
+
+/** Accepted and on its way to readers (or already with them). */
+function isAccepted(workflow: WorkflowOut): boolean {
+  return AFTER_ACCEPTANCE.has(workflow.stage) || ["scheduled", "published"].includes(workflow.status);
+}
+
+function inProduction(workflow: WorkflowOut): boolean {
+  return workflow.stage === "production" || ["scheduled", "published"].includes(workflow.status);
+}
+
+/** Copyediting and production files, for everyone who works on them. */
+function StageFiles({ submissionId, workflow }: { submissionId: number; workflow: WorkflowOut }) {
+  return (
+    <Stack gap="lg">
+      <StageFilesCard submissionId={submissionId} workflow={workflow} stage="copyedit" />
+      {inProduction(workflow) && !workflow.viewer.is_author ? (
+        <StageFilesCard submissionId={submissionId} workflow={workflow} stage="production" />
+      ) : null}
+    </Stack>
   );
 }
 
@@ -219,6 +250,30 @@ function AuthorStatus({ workflow, onOpenReviews }: { workflow: WorkflowOut; onOp
         "Reviewers are reading your manuscript. We will write when there is a decision.",
       ];
     }
+  } else if (workflow.status === "published") {
+    [title, text, color] = [
+      "Published",
+      "Your article has been published. Thank you for publishing with us.",
+      "green",
+    ];
+  } else if (workflow.status === "scheduled") {
+    [title, text, color] = [
+      "Scheduled for publication",
+      "Your article will appear when its issue is published.",
+      "teal",
+    ];
+  } else if (workflow.stage === "production") {
+    [title, text, color] = [
+      "In production",
+      "Your article is being typeset. The editors may ask you to check the proofs in a discussion.",
+      "teal",
+    ];
+  } else if (workflow.stage === "copyediting") {
+    [title, text, color] = [
+      "Accepted: copyediting",
+      "The copyeditor is preparing the text. Their questions and versions of the text come under Copyediting.",
+      "teal",
+    ];
   } else {
     [title, text, color] = [
       "Accepted",
@@ -328,6 +383,16 @@ function EditorView({ data, workflow }: { data: SubmissionOut; workflow: Workflo
             Review{workflow.rounds.length ? ` · round ${workflow.rounds.length}` : ""}
             {reviewing ? ` (${reviewing} reviewing)` : ""}
           </Tabs.Tab>
+          {isAccepted(workflow) ? (
+            <Tabs.Tab value="copyediting" leftSection={<IconEdit size={16} />}>
+              Copyediting and production
+            </Tabs.Tab>
+          ) : null}
+          {inProduction(workflow) ? (
+            <Tabs.Tab value="publication" leftSection={<IconBook size={16} />}>
+              Publication
+            </Tabs.Tab>
+          ) : null}
           <Tabs.Tab value="discussions" leftSection={<IconMessages size={16} />}>
             Discussions{workflow.discussions.length ? ` (${workflow.discussions.length})` : ""}
           </Tabs.Tab>
@@ -337,13 +402,19 @@ function EditorView({ data, workflow }: { data: SubmissionOut; workflow: Workflo
         </Tabs.List>
         <Tabs.Panel value="overview" pt="lg">
           <Stack gap="lg">
-            <EditorsCard submissionId={data.id} workflow={workflow} />
+            <ParticipantsCard submissionId={data.id} workflow={workflow} />
             <SimilarityPanel submission={data} />
             <SubmissionSummaryCards submission={data} />
           </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="review" pt="lg">
           <ReviewRounds submissionId={data.id} workflow={workflow} />
+        </Tabs.Panel>
+        <Tabs.Panel value="copyediting" pt="lg">
+          {tab === "copyediting" ? <StageFiles submissionId={data.id} workflow={workflow} /> : null}
+        </Tabs.Panel>
+        <Tabs.Panel value="publication" pt="lg">
+          {tab === "publication" ? <PublicationPanel submissionId={data.id} /> : null}
         </Tabs.Panel>
         <Tabs.Panel value="discussions" pt="lg">
           <Discussions submissionId={data.id} workflow={workflow} />
@@ -381,6 +452,11 @@ function AuthorView({ data, workflow }: { data: SubmissionOut; workflow: Workflo
           <Tabs.Tab value="reviews" leftSection={<IconUsersGroup size={16} />}>
             Reviews and decisions
           </Tabs.Tab>
+          {isAccepted(workflow) ? (
+            <Tabs.Tab value="copyediting" leftSection={<IconEdit size={16} />}>
+              Copyediting
+            </Tabs.Tab>
+          ) : null}
           <Tabs.Tab value="discussions" leftSection={<IconMessages size={16} />}>
             Discussions{workflow.discussions.length ? ` (${workflow.discussions.length})` : ""}
           </Tabs.Tab>
@@ -401,6 +477,9 @@ function AuthorView({ data, workflow }: { data: SubmissionOut; workflow: Workflo
         <Tabs.Panel value="fee" pt="lg">
           {tab === "fee" ? <FeePanel submissionId={data.id} /> : null}
         </Tabs.Panel>
+        <Tabs.Panel value="copyediting" pt="lg">
+          {tab === "copyediting" ? <StageFiles submissionId={data.id} workflow={workflow} /> : null}
+        </Tabs.Panel>
         <Tabs.Panel value="reviews" pt="lg">
           <Stack gap="lg">
             <AuthorReviews submissionId={data.id} workflow={workflow} />
@@ -417,6 +496,47 @@ function AuthorView({ data, workflow }: { data: SubmissionOut; workflow: Workflo
         </Tabs.Panel>
       </Tabs>
     </Stack>
+  );
+}
+
+/** Copyeditors, layout editors and proofreaders: the accepted article, its files, and the discussions. */
+function ProductionView({ data, workflow }: { data: SubmissionOut; workflow: WorkflowOut }) {
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") ?? "files";
+  return (
+    <Tabs value={tab} onChange={(value) => setParams({ tab: value ?? "files" }, { replace: true })}>
+      <Tabs.List>
+        <Tabs.Tab value="files" leftSection={<IconEdit size={16} />}>
+          Files
+        </Tabs.Tab>
+        {inProduction(workflow) ? (
+          <Tabs.Tab value="publication" leftSection={<IconBook size={16} />}>
+            Publication
+          </Tabs.Tab>
+        ) : null}
+        <Tabs.Tab value="overview" leftSection={<IconFileText size={16} />}>
+          Manuscript
+        </Tabs.Tab>
+        <Tabs.Tab value="discussions" leftSection={<IconMessages size={16} />}>
+          Discussions{workflow.discussions.length ? ` (${workflow.discussions.length})` : ""}
+        </Tabs.Tab>
+      </Tabs.List>
+      <Tabs.Panel value="files" pt="lg">
+        {tab === "files" ? <StageFiles submissionId={data.id} workflow={workflow} /> : null}
+      </Tabs.Panel>
+      <Tabs.Panel value="publication" pt="lg">
+        {tab === "publication" ? <PublicationPanel submissionId={data.id} /> : null}
+      </Tabs.Panel>
+      <Tabs.Panel value="overview" pt="lg">
+        <Stack gap="lg">
+          <ParticipantsCard submissionId={data.id} workflow={workflow} />
+          <SubmissionSummaryCards submission={data} />
+        </Stack>
+      </Tabs.Panel>
+      <Tabs.Panel value="discussions" pt="lg">
+        <Discussions submissionId={data.id} workflow={workflow} />
+      </Tabs.Panel>
+    </Tabs>
   );
 }
 
@@ -483,8 +603,10 @@ export function SubmissionDetailPage() {
           <StageProgress workflow={workflow.data} />
           {data.viewer.is_editor ? (
             <EditorView data={data} workflow={workflow.data} />
-          ) : (
+          ) : data.viewer.is_author ? (
             <AuthorView data={data} workflow={workflow.data} />
+          ) : (
+            <ProductionView data={data} workflow={workflow.data} />
           )}
         </>
       )}

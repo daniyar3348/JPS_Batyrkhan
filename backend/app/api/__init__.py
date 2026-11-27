@@ -19,6 +19,9 @@ from app.modules.journals.router import public_router as journals_public_router
 from app.modules.journals.router import router as journals_router
 from app.modules.payments.router import router as payments_router
 from app.modules.payments.router import webhook_router as payment_webhooks
+from app.modules.publishing.oai import oai_router
+from app.modules.publishing.public import public_router as publishing_public_router
+from app.modules.publishing.router import router as publishing_router
 from app.modules.review.router import router as review_router
 from app.modules.submissions.router import router as submissions_router
 from app.modules.workflow.router import router as workflow_router
@@ -51,13 +54,16 @@ def build_router() -> APIRouter:
     workspace.include_router(review_router)
     workspace.include_router(workflow_router)
     workspace.include_router(payments_router)
+    workspace.include_router(publishing_router)
     # Provider notifications and the test payment page: no session, signatures instead.
     workspace.include_router(payment_webhooks)
     root.include_router(workspace)
 
     public = APIRouter(prefix="/public/v1", responses=_ERRORS)
     public.include_router(journals_public_router)
+    public.include_router(publishing_public_router)
     root.include_router(public)
+    root.include_router(oai_router)
 
     root.include_router(_health_router())
     root.include_router(storage_router)

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from app.modules.journals.deps import Principal
 from app.modules.journals.permissions import Capability
-from app.modules.submissions.models import Submission, SubmissionStatus
+from app.modules.submissions.models import PRODUCTION_ROLES, Submission, SubmissionStatus
 
 
 @dataclass(frozen=True)
@@ -18,10 +18,13 @@ class Access:
     can_manage: bool = False
     # Record decisions. Editors assigned with "recommend only" recommend instead.
     can_decide: bool = False
+    # Copyeditor, layout editor, proofreader: they see the accepted article and their stage's files,
+    # never the review.
+    production_roles: frozenset[str] = frozenset()
 
     @property
     def can_view(self) -> bool:
-        return self.is_author or self.is_editor
+        return self.is_author or self.is_editor or bool(self.production_roles)
 
     @property
     def recommend_only(self) -> bool:
@@ -52,12 +55,18 @@ def access_for(principal: Principal, submission: Submission) -> Access:
         return Access(is_author=True, is_editor=False, can_edit=False)
     sees_all = principal.can(Capability.SUBMISSIONS_VIEW_ALL)
     assignment = submission.participant(principal.user.id)
+    production = frozenset(
+        p.role
+        for p in submission.participants
+        if p.user_id == principal.user.id and p.role in PRODUCTION_ROLES
+    )
     if not (sees_all or assignment is not None or is_section_editor(principal, submission)):
-        return NO_ACCESS
+        return Access(is_author=False, is_editor=False, can_edit=False, production_roles=production)
     return Access(
         is_author=False,
         is_editor=True,
         can_edit=False,
         can_manage=sees_all or assignment is not None,
         can_decide=sees_all or (assignment is not None and not assignment.recommend_only),
+        production_roles=production,
     )

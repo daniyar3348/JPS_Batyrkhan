@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.errors import Conflict, FieldError, Forbidden, NotFound, ValidationFailed
+from app.core.jobs import enqueue
 from app.core.storage import Storage
 from app.modules.audit.service import AuditService
 from app.modules.files.models import FileStage, FileStatus, SubmissionFile
@@ -32,9 +33,24 @@ from app.modules.submissions.service import editors_to_notify
 from app.modules.workflow import emails
 from app.modules.workflow.models import Discussion, DiscussionMessage, EditorialDecision
 from app.modules.workflow.schemas import DecisionIn, DecisionOption, DiscussionCreate, EditorIn
+from app.modules.workflow.stage_files import StageFiles
 from app.modules.workflow.transitions import RULES, Decision, RoundEffect, Rule, allowed_here
 
 SEPARATOR = "\n\n" + "-" * 40 + "\n\n"
+
+# Who can be assigned to each kind of work on a manuscript, by their role in the journal.
+PARTICIPANT_ROLES: dict[str, frozenset[Role]] = {
+    ParticipantRole.EDITOR: SECTION_EDITOR_ROLES,
+    ParticipantRole.COPYEDITOR: frozenset({Role.COPYEDITOR}),
+    ParticipantRole.LAYOUT_EDITOR: frozenset({Role.LAYOUT_EDITOR}),
+    ParticipantRole.PROOFREADER: frozenset({Role.PROOFREADER}),
+}
+TASKS = {
+    ParticipantRole.COPYEDITOR: "copyedit",
+    ParticipantRole.LAYOUT_EDITOR: "typeset",
+    ParticipantRole.PROOFREADER: "proofread",
+}
+RESERVE_DOI = "publishing.reserve_doi"  # handled by the publishing module, which sits above this one
 
 
 def option_of(rule: Rule, stage: str) -> DecisionOption:
@@ -59,6 +75,7 @@ class WorkflowService:
         self.mailer = self.review.mailer
         self.audit = AuditService(db)
         self.payments = PaymentService(db, settings)
+        self.stage_files = StageFiles(self.files)
 
     # ------------------------------------------------------------------ decisions
 
@@ -75,6 +92,7 @@ class WorkflowService:
             option_of(rule, submission.stage)
             for rule in RULES.values()
             if rule.decision != Decision.WITHDRAW
+            and not rule.publishing
             and rule.recommendation == access.recommend_only
             and allowed_here(
                 rule, stage=submission.stage, status=submission.status, round_status=round_status
@@ -141,6 +159,10 @@ class WorkflowService:
         rule = RULES[decision]
         if decision == Decision.WITHDRAW:
             raise Forbidden("Only the authors can withdraw a manuscript.")
+        if rule.publishing:
+            raise Conflict(
+                "Schedule and publish articles from the publication screen.", code="use_publishing"
+            )
         if rule.recommendation:
             if not access.recommend_only:
                 raise Forbidden("Recommendations are for editors who do not decide themselves.")
@@ -227,6 +249,9 @@ class WorkflowService:
                 )
         if rule.recommendation:
             await self._tell_deciders(journal, submission, rule, data.reason, actor)
+        if rule.decision == Decision.SEND_TO_PRODUCTION:
+            # The DOI must exist before the galleys are typeset (it is printed on them).
+            await enqueue(self.db, RESERVE_DOI, {"submission_id": submission.id})
         if rule.decision == Decision.ACCEPT:
             # The publication fee is invoiced only now, never before acceptance (§8.5).
             await self.payments.issue_for_accepted(journal, submission, actor)
@@ -237,6 +262,46 @@ class WorkflowService:
             actor_id=actor.id,
             journal_id=journal.id,
             data={"decision": rule.decision.value, "stage": submission.stage, "status": submission.status},
+        )
+        return record
+
+    async def record_transition(
+        self, journal: Journal, submission: Submission, decision: Decision, actor: User, *, reason: str = ""
+    ) -> EditorialDecision:
+        """A publishing step (schedule, unschedule, publish), checked against the same table of transitions.
+        The publishing module calls this after its own checks (issue, galleys, fee)."""
+        rule = RULES[decision]
+        if not rule.publishing:
+            raise ValueError(f"{decision} is not a publishing step")
+        if not allowed_here(rule, stage=submission.stage, status=submission.status, round_status=None):
+            raise Conflict(f"“{rule.label}” is not possible at this point.", code="decision_not_allowed")
+        stage_before = submission.stage
+        if rule.to_stage is not None:
+            submission.stage = rule.to_stage
+        if rule.to_status is not None:
+            submission.status = rule.to_status
+        record = EditorialDecision(
+            submission_id=submission.id,
+            round_id=None,
+            decision=rule.decision.value,
+            is_recommendation=False,
+            stage_before=stage_before,
+            stage_after=submission.stage,
+            status_after=submission.status,
+            made_by_id=actor.id,
+            reason=reason,
+            letter_to=[],
+        )
+        record.made_by = actor
+        self.db.add(record)
+        await self.db.flush()
+        await self.audit.record(
+            "submission.decision",
+            "submission",
+            submission.id,
+            actor_id=actor.id,
+            journal_id=journal.id,
+            data={"decision": rule.decision.value, "status": submission.status},
         )
         return record
 
@@ -327,79 +392,95 @@ class WorkflowService:
 
     # ------------------------------------------------------------------ editors
 
-    async def editor_candidates(self, journal: Journal, submission: Submission) -> list[User]:
-        assigned = {p.user_id for p in submission.participants if p.role == ParticipantRole.EDITOR}
+    async def candidates(self, journal: Journal, submission: Submission, role: str) -> list[User]:
+        """People with the journal role for this part of the work, not yet assigned, not authors."""
+        assigned = {p.user_id for p in submission.participants if p.role == role}
         authors = {c.email for c in submission.publication.contributors} | {submission.submitter.email}
         people: dict[int, User] = {}
-        for role in SECTION_EDITOR_ROLES:
-            for user in await self.journals.users_with_role(journal.id, role):
+        for journal_role in PARTICIPANT_ROLES[role]:
+            for user in await self.journals.users_with_role(journal.id, journal_role):
                 if user.id not in assigned and user.email not in authors:
                     people[user.id] = user
         return sorted(people.values(), key=lambda u: (u.family_name.lower(), u.given_name.lower()))
 
-    async def assign_editor(
+    @staticmethod
+    def _may_assign(access: Access, role: str) -> None:
+        # Deciding editors choose the editors; any of the manuscript's editors brings in production help.
+        allowed = access.can_decide if role == ParticipantRole.EDITOR else access.can_manage
+        if not allowed:
+            raise Forbidden("Only the manuscript's editors can change who works on it.")
+
+    async def assign(
         self, journal: Journal, submission: Submission, access: Access, data: EditorIn, actor: User
     ) -> None:
-        if not access.can_decide:
-            raise Forbidden("Only the deciding editors can assign editors.")
-        if submission.participant(data.user_id) is not None:
-            raise Conflict("This editor is already assigned.", code="already_assigned")
+        self._may_assign(access, data.role)
+        if submission.participant(data.user_id, data.role) is not None:
+            raise Conflict("This person is already assigned.", code="already_assigned")
         candidate = next(
-            (u for u in await self.editor_candidates(journal, submission) if u.id == data.user_id), None
+            (u for u in await self.candidates(journal, submission, data.role) if u.id == data.user_id), None
         )
         if candidate is None:
             raise ValidationFailed(
-                "Choose an editor of the journal who is not an author of this manuscript.",
-                code="not_an_editor",
+                "Choose someone with this role in the journal who is not an author of this manuscript.",
+                code="not_eligible",
             )
         participant = Participant(
             user_id=candidate.id,
-            role=ParticipantRole.EDITOR,
-            recommend_only=data.recommend_only,
+            role=data.role,
+            recommend_only=data.recommend_only and data.role == ParticipantRole.EDITOR,
             assigned_by_id=actor.id,
         )
         participant.user = candidate  # loaded now, so responses never trigger lazy loading
         submission.participants.append(participant)
         await self.db.flush()
         if data.notify and candidate.id != actor.id:
+            if data.role == ParticipantRole.EDITOR:
+                key, values = (
+                    emails.EDITOR_ASSIGNED.key,
+                    {
+                        "assignedBy": actor.full_name,
+                        "roleNote": " and recommend a decision" if data.recommend_only else "",
+                    },
+                )
+            else:
+                key, values = (
+                    emails.PRODUCTION_ASSIGNED.key,
+                    {"assignedBy": actor.full_name, "task": TASKS[data.role]},
+                )
             await self.mailer.send(
                 journal,
-                emails.EDITOR_ASSIGNED.key,
+                key,
                 submission,
                 to_name=candidate.full_name,
                 to_email=candidate.email,
-                values={
-                    "assignedBy": actor.full_name,
-                    "roleNote": " and recommend a decision" if data.recommend_only else "",
-                },
+                values=values,
                 sent_by_id=actor.id,
             )
         await self.audit.record(
-            "submission.editor_assigned",
+            "submission.participant_assigned",
             "submission",
             submission.id,
             actor_id=actor.id,
             journal_id=journal.id,
-            data={"user_id": candidate.id, "recommend_only": data.recommend_only},
+            data={"user_id": candidate.id, "role": data.role, "recommend_only": participant.recommend_only},
         )
 
-    async def unassign_editor(
-        self, journal: Journal, submission: Submission, access: Access, user_id: int, actor: User
+    async def unassign(
+        self, journal: Journal, submission: Submission, access: Access, user_id: int, role: str, actor: User
     ) -> None:
-        if not access.can_decide:
-            raise Forbidden("Only the deciding editors can change the editors.")
-        participant = submission.participant(user_id)
+        self._may_assign(access, role)
+        participant = submission.participant(user_id, role)
         if participant is None:
-            raise NotFound("This editor is not assigned.")
+            raise NotFound("This person is not assigned.")
         submission.participants.remove(participant)
         await self.db.flush()
         await self.audit.record(
-            "submission.editor_unassigned",
+            "submission.participant_unassigned",
             "submission",
             submission.id,
             actor_id=actor.id,
             journal_id=journal.id,
-            data={"user_id": user_id},
+            data={"user_id": user_id, "role": role},
         )
 
     # ------------------------------------------------------------------ discussions
@@ -407,8 +488,9 @@ class WorkflowService:
     async def people(self, journal: Journal, submission: Submission) -> list[tuple[User, str]]:
         """Who can take part in discussions: the manuscript's editors and its authors with accounts."""
         result: dict[int, tuple[User, str]] = {}
-        for editor in [p.user for p in submission.participants if p.role == ParticipantRole.EDITOR]:
-            result[editor.id] = (editor, "editor")
+        for participant in submission.participants:
+            role = "editor" if participant.role == ParticipantRole.EDITOR else "production"
+            result[participant.user.id] = (participant.user, role)
         for chief in await self.journals.users_with_role(journal.id, Role.EDITOR_IN_CHIEF):
             result.setdefault(chief.id, (chief, "editor"))
         authors = [submission.submitter]
@@ -441,7 +523,7 @@ class WorkflowService:
     async def create_discussion(
         self, journal: Journal, submission: Submission, access: Access, data: DiscussionCreate, actor: User
     ) -> Discussion:
-        if not (access.is_author or access.can_manage):
+        if not (access.is_author or access.can_manage or access.production_roles):
             raise Forbidden("Only the manuscript's authors and editors can start discussions.")
         people = {user.id: user for user, _ in await self.people(journal, submission)}
         chosen = []

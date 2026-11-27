@@ -83,6 +83,23 @@ class Settings(BaseSettings):
     paypal_client_secret: SecretStr | None = None
     paypal_webhook_id: str | None = None
 
+    # DOI registration with Crossref. "fake" pretends every deposit succeeds (development only); "test"
+    # sends deposits to Crossref's test system, which registers nothing; "production" registers DOIs.
+    crossref_mode: Literal["disabled", "fake", "test", "production"] = "disabled"
+    # The Crossref account: a username, or "email@example.org/role" for a role in an organisation account.
+    crossref_username: str | None = None
+    crossref_password: SecretStr | None = None
+    # Seconds between checks of a deposit's result (Crossref processes deposits in a queue).
+    crossref_check_delay_seconds: int = 120
+
+    # The journal site (stage 6) is told which pages to rebuild after something is published.
+    # Without a URL nothing is sent. The secret signs each request (HMAC-SHA256).
+    site_revalidate_url: str | None = None
+    site_revalidate_secret: SecretStr | None = None
+    # How long caches may keep public API responses (seconds), and serve stale ones while refreshing.
+    public_cache_seconds: int = 60
+    public_stale_seconds: int = 600
+
     @model_validator(mode="after")
     def _check_production(self) -> Self:
         if self.environment != "production":
@@ -103,6 +120,10 @@ class Settings(BaseSettings):
             problems.append("JPS_PAYMENTS_TEST_PROVIDER must be false")
         if self.paypal_client_id and self.paypal_mode != "live":
             problems.append("JPS_PAYPAL_MODE must be live")
+        if self.crossref_mode == "fake":
+            problems.append("JPS_CROSSREF_MODE must not be fake")
+        if self.site_revalidate_url and not self.site_revalidate_secret:
+            problems.append("JPS_SITE_REVALIDATE_SECRET is required with JPS_SITE_REVALIDATE_URL")
         if problems:
             raise ValueError("Unsafe production settings: " + "; ".join(problems))
         return self

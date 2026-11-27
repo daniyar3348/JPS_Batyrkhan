@@ -39,6 +39,7 @@ async def test_draft_starts_with_the_submitter_as_corresponding_author(author: A
         "can_manage": False,
         "can_decide": False,
         "recommend_only": False,
+        "production_roles": [],
     }
     [me] = draft["publication"]["contributors"]
     assert (me["full_name"], me["email"], me["is_corresponding"]) == ("Asel Author", "asel@example.org", True)

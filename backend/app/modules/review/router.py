@@ -73,7 +73,8 @@ async def _load(
 ) -> tuple[Submission, Access]:
     submission = await submissions.get(principal.journal, submission_id)
     access = access_for(principal, submission)
-    if not access.can_view:
+    # Peer review is for the editors and the authors; copyeditors and typesetters never see it.
+    if not (access.is_editor or access.is_author):
         raise NotFound("Submission not found.")
     return submission, access
 

@@ -31,6 +31,8 @@ DEMO_USERS = [
     ("reviewer@example.org", "Ruslan", "Reviewer", [Role.REVIEWER, Role.AUTHOR]),
     ("author@example.org", "Asel", "Author", [Role.AUTHOR]),
     ("finance@example.org", "Farida", "Finance", [Role.FINANCE_MANAGER]),
+    ("copyeditor@example.org", "Kamila", "Copyeditor", [Role.COPYEDITOR, Role.PROOFREADER]),
+    ("layout@example.org", "Lev", "Layout", [Role.LAYOUT_EDITOR]),
 ]
 DEMO_SECTIONS = [
     SectionCreate(title="Research Articles", abbreviation="ART", sort_order=1, policy="Original research."),

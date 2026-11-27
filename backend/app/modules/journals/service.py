@@ -20,6 +20,7 @@ from app.modules.identity.service import IdentityService
 from app.modules.journals.models import Journal, Section, SectionEditor, UserRole
 from app.modules.journals.payment_settings import PaymentSettings, payment_settings
 from app.modules.journals.permissions import ROLE_LABELS, SECTION_EDITOR_ROLES, Role
+from app.modules.journals.publishing_settings import PublishingSettings, publishing_settings
 from app.modules.journals.review_settings import ReviewSettings, review_settings
 from app.modules.journals.schemas import InviteIn, JournalUpdate, SectionCreate, SectionUpdate
 from app.modules.journals.submission_settings import SubmissionSettings, submission_settings
@@ -104,12 +105,19 @@ class JournalService:
         await self._save_settings(journal, "payments", before, data, expected_version, actor)
         return data
 
+    async def update_publishing_settings(
+        self, journal: Journal, data: PublishingSettings, *, expected_version: int, actor: User
+    ) -> PublishingSettings:
+        before = publishing_settings(journal)
+        await self._save_settings(journal, "publishing", before, data, expected_version, actor)
+        return data
+
     async def _save_settings(
         self,
         journal: Journal,
         name: str,
-        before: SubmissionSettings | ReviewSettings | PaymentSettings,
-        data: SubmissionSettings | ReviewSettings | PaymentSettings,
+        before: SubmissionSettings | ReviewSettings | PaymentSettings | PublishingSettings,
+        data: SubmissionSettings | ReviewSettings | PaymentSettings | PublishingSettings,
         expected_version: int,
         actor: User,
     ) -> None:

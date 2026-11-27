@@ -230,3 +230,38 @@ DISCUSSION_MESSAGE = register(
         },
     )
 )
+
+PRODUCTION_ASSIGNED = register(
+    TemplateSpec(
+        key="production_assigned",
+        group="Submission",
+        name="Copyediting or production assignment",
+        description="Sent to a copyeditor, layout editor or proofreader assigned to an accepted article.",
+        recipient="Copyeditor, layout editor or proofreader",
+        subject="Please {task} {submissionNumber}",
+        body=(
+            "Dear {recipientName},\n\n"
+            "{assignedBy} has asked you to {task} the accepted article {submissionNumber}, “{submissionTitle}”.\n\n"
+            "The files and the discussion with the authors are here:\n\n{submissionUrl}\n\n"
+            "{journalName}"
+        ),
+        variables={
+            "submissionNumber": LETTER["submissionNumber"],
+            "submissionTitle": LETTER["submissionTitle"],
+            "submissionUrl": LETTER["submissionUrl"],
+            "assignedBy": "Name of the editor who made the assignment",
+            "task": "What to do: copyedit, typeset or proofread",
+        },
+    )
+)
+
+SEND_TO_PRODUCTION = _letter(
+    "decision_send_to_production",
+    "Sent to production",
+    "The editor sends the copyedited article to typesetting.",
+    "{submissionNumber}: your article is in production",
+    "Dear {recipientName},\n\n"
+    "Copyediting of “{submissionTitle}” is finished, and the article is now being typeset. You will be "
+    "asked to check the proofs before publication.\n\n"
+    "{editorName}\n{journalName}",
+)

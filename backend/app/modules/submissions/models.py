@@ -28,8 +28,27 @@ class Stage:
     PRODUCTION = "production"
 
 
+class PublicationStatus:
+    DRAFT = "draft"  # the author's draft, or a new version the editors are preparing
+    QUEUED = "queued"  # submitted; on its way through the editorial stages
+    SCHEDULED = "scheduled"  # in an issue that has not been published yet
+    PUBLISHED = "published"  # never changed again
+
+
+# Versions whose metadata may still change (by the author in a draft, by the editors after acceptance).
+EDITABLE_PUBLICATION = frozenset({PublicationStatus.DRAFT, PublicationStatus.QUEUED})
+
+
 class ParticipantRole:
     EDITOR = "editor"  # handles the manuscript: invites reviewers, records decisions
+    COPYEDITOR = "copyeditor"  # edits the accepted text with the authors
+    LAYOUT_EDITOR = "layout_editor"  # typesets the galleys
+    PROOFREADER = "proofreader"  # checks the galleys before publication
+
+
+PRODUCTION_ROLES = frozenset(
+    {ParticipantRole.COPYEDITOR, ParticipantRole.LAYOUT_EDITOR, ParticipantRole.PROOFREADER}
+)
 
 
 class Submission(TimestampMixin, Base):
@@ -95,6 +114,18 @@ class Publication(TimestampMixin, Base):
     references: Mapped[str] = mapped_column(Text, default="", server_default="")
     funding_statement: Mapped[str] = mapped_column(Text, default="", server_default="")
     competing_interests: Mapped[str] = mapped_column(Text, default="", server_default="")
+    # Publishing (set in production; a published version is never changed again).
+    doi: Mapped[str | None] = mapped_column(String(200), index=True)
+    url_path: Mapped[str | None] = mapped_column(String(100))
+    pages: Mapped[str] = mapped_column(String(30), default="", server_default="")
+    license_url: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    copyright_holder: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    copyright_year: Mapped[int | None] = mapped_column(Integer)
+    issue_id: Mapped[int | None] = mapped_column(ForeignKey("issues.id", ondelete="SET NULL"), index=True)
+    issue_position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    published_at: Mapped[datetime | None]
+    # What changed in this version, shown to readers of later versions.
+    version_note: Mapped[str] = mapped_column(Text, default="", server_default="")
     row_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     submission: Mapped[Submission] = relationship(back_populates="publications", lazy="raise")

@@ -63,6 +63,14 @@ async def _editable(service: SubmissionService, principal: Principal, submission
     return submission
 
 
+async def _metadata_editable(
+    service: SubmissionService, principal: Principal, submission_id: int
+) -> Submission:
+    submission, access = await _visible(service, principal, submission_id)
+    service.require_metadata_editable(submission, access)
+    return submission
+
+
 async def _respond(service: SubmissionService, principal: Principal, submission: Submission) -> SubmissionOut:
     await service.db.commit()
     return await service.to_out(principal, submission, access_for(principal, submission))
@@ -80,6 +88,21 @@ async def list_my_submissions(
 ) -> Page[SubmissionSummary]:
     """Submissions the user started or is listed on as an author."""
     rows, next_cursor = await service.list_mine(principal, cursor=cursor, limit=clamp_limit(limit))
+    return Page[SubmissionSummary](items=[summary_of(s) for s in rows], next_cursor=next_cursor)
+
+
+@router.get("/production-work")
+async def list_production_work(
+    include_done: bool = Query(default=False, description="Also articles already published or closed"),
+    cursor: str | None = None,
+    limit: int = Query(default=50, ge=1, le=200),
+    principal: Principal = Depends(get_principal),
+    service: SubmissionService = Depends(get_submission_service),
+) -> Page[SubmissionSummary]:
+    """Accepted articles the user is assigned to copyedit, typeset or proofread."""
+    rows, next_cursor = await service.list_production_work(
+        principal, include_done=include_done, cursor=cursor, limit=clamp_limit(limit)
+    )
     return Page[SubmissionSummary](items=[summary_of(s) for s in rows], next_cursor=next_cursor)
 
 
@@ -160,7 +183,7 @@ async def update_publication(
     service: SubmissionService = Depends(get_submission_service),
 ) -> SubmissionOut:
     """Title, abstract, keywords and other metadata. If-Match: the publication's row_version."""
-    submission = await _editable(service, principal, submission_id)
+    submission = await _metadata_editable(service, principal, submission_id)
     await service.update_publication(submission, data, expected_version=parse_if_match(if_match))
     return await _respond(service, principal, submission)
 
@@ -198,7 +221,7 @@ async def add_contributor(
     principal: Principal = Depends(get_principal),
     service: SubmissionService = Depends(get_submission_service),
 ) -> ContributorOut:
-    submission = await _editable(service, principal, submission_id)
+    submission = await _metadata_editable(service, principal, submission_id)
     contributor = await service.add_contributor(submission, data)
     await service.db.commit()
     return ContributorOut.of(contributor)
@@ -212,7 +235,7 @@ async def update_contributor(
     principal: Principal = Depends(get_principal),
     service: SubmissionService = Depends(get_submission_service),
 ) -> ContributorOut:
-    submission = await _editable(service, principal, submission_id)
+    submission = await _metadata_editable(service, principal, submission_id)
     contributor = await service.update_contributor(submission, contributor_id, data)
     await service.db.commit()
     return ContributorOut.of(contributor)
@@ -225,7 +248,7 @@ async def delete_contributor(
     principal: Principal = Depends(get_principal),
     service: SubmissionService = Depends(get_submission_service),
 ) -> None:
-    submission = await _editable(service, principal, submission_id)
+    submission = await _metadata_editable(service, principal, submission_id)
     await service.delete_contributor(submission, contributor_id)
     await service.db.commit()
 
@@ -237,7 +260,7 @@ async def reorder_contributors(
     principal: Principal = Depends(get_principal),
     service: SubmissionService = Depends(get_submission_service),
 ) -> None:
-    submission = await _editable(service, principal, submission_id)
+    submission = await _metadata_editable(service, principal, submission_id)
     await service.reorder_contributors(submission, data.contributor_ids)
     await service.db.commit()
 

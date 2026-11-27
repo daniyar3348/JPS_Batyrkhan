@@ -37,10 +37,13 @@ from app.modules.similarity.service import SimilarityService
 from app.modules.submissions import emails
 from app.modules.submissions.mailer import Mailer
 from app.modules.submissions.models import (
+    EDITABLE_PUBLICATION,
+    PRODUCTION_ROLES,
     Contributor,
     Participant,
     ParticipantRole,
     Publication,
+    PublicationStatus,
     Stage,
     Submission,
     SubmissionCounter,
@@ -95,6 +98,26 @@ class SubmissionService:
                 "The manuscript has been submitted and can no longer be changed here.", code="not_editable"
             )
         raise Forbidden("Only the person who started this submission can change it.")
+
+    @staticmethod
+    def require_metadata_editable(submission: Submission, access: Access) -> None:
+        """Title, abstract, authors... The author changes the draft; after acceptance the editors correct
+        the metadata until the version is scheduled or published (a published version gets a new version)."""
+        if access.can_edit:
+            return
+        if access.can_manage:
+            if submission.stage not in (Stage.COPYEDITING, Stage.PRODUCTION):
+                raise Conflict(
+                    "Editors correct the metadata after acceptance, during copyediting and production.",
+                    code="not_editable",
+                )
+            if submission.publication.status not in EDITABLE_PUBLICATION:
+                raise Conflict(
+                    "This version is scheduled or published. Unschedule it, or create a new version.",
+                    code="not_editable",
+                )
+            return
+        SubmissionService.require_editable(submission, access)
 
     # ------------------------------------------------------------------ drafts
 
@@ -351,7 +374,7 @@ class SubmissionService:
         submission.stage = Stage.SUBMISSION
         submission.submitted_at = now
         submission.checklist_confirmed = list(settings.checklist)
-        submission.publication.status = "queued"
+        submission.publication.status = PublicationStatus.QUEUED
         await self._link_accounts(submission.publication)
         self._assign_section_editors(submission)
         await self.db.flush()
@@ -562,6 +585,20 @@ class SubmissionService:
                     ),
                 )
             )
+        return await self._page(query, Submission.submitted_at, cursor, limit)
+
+    async def list_production_work(
+        self, principal: Principal, *, include_done: bool, cursor: str | None, limit: int
+    ) -> tuple[Sequence[Submission], str | None]:
+        """Accepted articles the user copyedits, typesets or proofreads."""
+        mine = select(Participant.submission_id).where(
+            Participant.user_id == principal.user.id, Participant.role.in_(PRODUCTION_ROLES)
+        )
+        query = select(Submission).where(
+            Submission.journal_id == principal.journal.id, Submission.id.in_(mine)
+        )
+        if not include_done:
+            query = query.where(Submission.status.in_((SubmissionStatus.QUEUED, SubmissionStatus.SCHEDULED)))
         return await self._page(query, Submission.submitted_at, cursor, limit)
 
     async def _page(

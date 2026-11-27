@@ -7,6 +7,7 @@ export const GENRE_LABELS: Record<Genre, string> = {
   table: "Table",
   supplementary: "Supplementary material",
   cover_letter: "Cover letter",
+  galley: "Galley",
 };
 
 export const GENRE_HELP: Record<Genre, string> = {
@@ -16,7 +17,11 @@ export const GENRE_HELP: Record<Genre, string> = {
   table: "Tables that are too large for the manuscript.",
   supplementary: "Data, code or other material that supports the article.",
   cover_letter: "A letter to the editor (you can also write it in the first step).",
+  galley: "The typeset file readers download. Added in production.",
 };
+
+/** Kinds of file a person chooses when uploading (galleys are added on the publication screen). */
+export const UPLOAD_GENRES = (Object.keys(GENRE_LABELS) as Genre[]).filter((genre) => genre !== "galley");
 
 interface StatusLook {
   label: string;

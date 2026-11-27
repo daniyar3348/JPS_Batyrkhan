@@ -28,6 +28,12 @@ class Decision(StrEnum):
     RECOMMEND_RESUBMIT = "recommend_resubmit"
     RECOMMEND_DECLINE = "recommend_decline"
     WITHDRAW = "withdraw"  # by the author
+    SEND_TO_PRODUCTION = "send_to_production"
+    BACK_TO_COPYEDITING = "back_to_copyediting"
+    # Publishing (made from the publication screen, through the publishing module).
+    SCHEDULE = "schedule"  # into a future issue
+    UNSCHEDULE = "unschedule"
+    PUBLISH = "publish"
 
 
 class RoundEffect(StrEnum):
@@ -57,6 +63,8 @@ class Rule:
     needs_reason: bool = False
     # Rounds in these states allow the decision (review stage only); empty means any.
     round_statuses: frozenset[str] = frozenset()
+    # Publishing steps are made from the publication screen, not offered as decisions.
+    publishing: bool = False
 
     @property
     def needs_files(self) -> bool:
@@ -169,6 +177,48 @@ RULES: dict[Decision, Rule] = {
             to_status=SubmissionStatus.WITHDRAWN,
             round=RoundEffect.CLOSE,
             needs_reason=True,
+        ),
+        Rule(
+            Decision.SEND_TO_PRODUCTION,
+            "Send to production",
+            "Copyediting is finished. Typesetting and proofs follow; the DOI is reserved now.",
+            stages=frozenset({Stage.COPYEDITING}),
+            to_stage=Stage.PRODUCTION,
+            letters={Stage.COPYEDITING: "decision_send_to_production"},
+        ),
+        Rule(
+            Decision.BACK_TO_COPYEDITING,
+            "Back to copyediting",
+            "Return the article to copyediting, for example to correct the text before typesetting.",
+            stages=frozenset({Stage.PRODUCTION}),
+            to_stage=Stage.COPYEDITING,
+            needs_reason=True,
+        ),
+        Rule(
+            Decision.SCHEDULE,
+            "Schedule for publication",
+            "Place the article in a future issue; it is published with the issue.",
+            stages=frozenset({Stage.PRODUCTION}),
+            to_status=SubmissionStatus.SCHEDULED,
+            publishing=True,
+        ),
+        Rule(
+            Decision.UNSCHEDULE,
+            "Unschedule",
+            "Take the article out of the issue it was scheduled in.",
+            stages=frozenset({Stage.PRODUCTION}),
+            statuses=frozenset({SubmissionStatus.SCHEDULED}),
+            to_status=SubmissionStatus.QUEUED,
+            publishing=True,
+        ),
+        Rule(
+            Decision.PUBLISH,
+            "Publish",
+            "Publish the article now (in a published issue, or online first).",
+            stages=frozenset({Stage.PRODUCTION}),
+            statuses=frozenset({SubmissionStatus.QUEUED, SubmissionStatus.SCHEDULED}),
+            to_status=SubmissionStatus.PUBLISHED,
+            publishing=True,
         ),
     ]
 }
