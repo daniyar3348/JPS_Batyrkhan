@@ -19,7 +19,9 @@ from app.modules.journals.deps import (
 )
 from app.modules.journals.email_templates import EmailTemplateService, TemplateSpec
 from app.modules.journals.models import EmailTemplate, Journal
+from app.modules.journals.payment_settings import payment_settings
 from app.modules.journals.permissions import ROLE_LABELS, Capability, Role
+from app.modules.journals.publishing_settings import publishing_settings
 from app.modules.journals.review_settings import ReviewSettings, ReviewSettingsOut, review_settings
 from app.modules.journals.schemas import (
     EmailTemplateIn,
@@ -29,7 +31,9 @@ from app.modules.journals.schemas import (
     JournalUpdate,
     MemberOut,
     MemberUpdate,
+    PublicFees,
     PublicJournalOut,
+    PublicSectionFee,
     PublicSectionOut,
     RolesIn,
     SectionCreate,
@@ -39,6 +43,7 @@ from app.modules.journals.schemas import (
     TemplateVariable,
 )
 from app.modules.journals.service import JournalService
+from app.modules.journals.site_settings import SiteSettings, SiteSettingsOut, site_settings
 from app.modules.journals.submission_settings import (
     SubmissionSettings,
     SubmissionSettingsOut,
@@ -382,6 +387,23 @@ async def get_public_journal(
     """Journal profile for the public website. Cacheable by CDNs."""
     sections = await service.list_sections(journal, include_inactive=False)
     response.headers["Cache-Control"] = PUBLIC_CACHE
+    site = site_settings(journal)
+    publishing = publishing_settings(journal)
+    payments = payment_settings(journal)
+    fees = None
+    if payments.enabled:
+        fees = PublicFees(
+            charged=payments.fee > 0 or any(amount > 0 for amount in payments.section_fees.values()),
+            currency=payments.currency,
+            amount=payments.fee,
+            vat_percent=payments.vat_percent,
+            section_fees=[
+                PublicSectionFee(section_id=s.id, section_title=s.title, amount=payments.section_fees[s.id])
+                for s in sections
+                if s.id in payments.section_fees
+            ],
+            waiver_policy=payments.waiver_policy,
+        )
     return PublicJournalOut(
         name=journal.name,
         abbreviation=journal.abbreviation,
@@ -395,4 +417,36 @@ async def get_public_journal(
             PublicSectionOut(id=s.id, title=s.title, abbreviation=s.abbreviation, policy=s.policy)
             for s in sections
         ],
+        tagline=site.tagline,
+        publication_frequency=site.publication_frequency,
+        editorial_board=site.editorial_board,
+        site_url=publishing.site_url,
+        license_url=publishing.license_url,
+        fees=fees,
     )
+
+
+@router.get("/journal/site-settings", tags=["journal"])
+async def get_site_settings(
+    response: Response, principal: Principal = Depends(require(Capability.SITE_MANAGE))
+) -> SiteSettingsOut:
+    """The site's tagline, publication frequency and editorial board."""
+    response.headers["ETag"] = etag_for(principal.journal.version)
+    return SiteSettingsOut.of(site_settings(principal.journal), principal.journal)
+
+
+@router.put("/journal/site-settings", tags=["journal"])
+async def update_site_settings(
+    data: SiteSettings,
+    response: Response,
+    if_match: str | None = Header(default=None),
+    principal: Principal = Depends(require(Capability.SITE_MANAGE)),
+    service: JournalService = Depends(get_journal_service),
+    db: AsyncSession = Depends(get_db),
+) -> SiteSettingsOut:
+    saved = await service.update_site_settings(
+        principal.journal, data, expected_version=parse_if_match(if_match), actor=principal.user
+    )
+    await db.commit()
+    response.headers["ETag"] = etag_for(principal.journal.version)
+    return SiteSettingsOut.of(saved, principal.journal)

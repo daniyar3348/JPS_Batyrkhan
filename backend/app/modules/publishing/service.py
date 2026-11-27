@@ -21,6 +21,7 @@ from app.core.config import Settings
 from app.core.db import utcnow
 from app.core.errors import Conflict, Forbidden, NotFound
 from app.core.jobs import enqueue
+from app.core.site import request_revalidation
 from app.core.storage import PresignedUpload, Storage
 from app.modules.files.models import FileStage, FileStatus
 from app.modules.files.types import Genre
@@ -38,7 +39,6 @@ from app.modules.publishing.models import (
     IssueStatus,
     PublishedArticle,
 )
-from app.modules.publishing.revalidate import SiteNotifier
 from app.modules.publishing.schemas import (
     Check,
     DepositOut,
@@ -72,7 +72,6 @@ logger = logging.getLogger(__name__)
 
 DEPOSIT_DOI = "publishing.deposit_doi"
 CHECK_DEPOSIT = "publishing.check_deposit"
-REVALIDATE_SITE = "publishing.revalidate_site"
 MAX_DEPOSIT_CHECKS = 30
 GALLEY_MAX_MB = 100
 
@@ -99,7 +98,6 @@ class PublishingService:
         self.payments = self.workflow.payments
         self.mailer = self.workflow.mailer
         self.audit = self.workflow.audit
-        self.notifier = SiteNotifier(settings)
 
     # ------------------------------------------------------------------ issues
 
@@ -909,8 +907,7 @@ class PublishingService:
         return row
 
     async def revalidate(self, paths: list[str]) -> None:
-        if self.notifier.configured:
-            await enqueue(self.db, REVALIDATE_SITE, {"paths": sorted(set(paths))})
+        await request_revalidation(self.db, self.settings, paths)
 
     # ------------------------------------------------------------------ DOIs
 

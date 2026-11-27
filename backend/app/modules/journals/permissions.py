@@ -31,12 +31,19 @@ class Capability(StrEnum):
     PAYMENTS_MANAGE = "payments.manage"
     # Issues, publishing settings and DOI registration. Articles are published by their deciding editors.
     PUBLISHING_MANAGE = "publishing.manage"
+    # The public site's pages, announcements and editorial board.
+    SITE_MANAGE = "site.manage"
 
 
 ROLE_CAPABILITIES: dict[Role, frozenset[Capability]] = {
     Role.ADMIN: frozenset(Capability),
     Role.EDITOR_IN_CHIEF: frozenset(
-        {Capability.USERS_VIEW, Capability.SUBMISSIONS_VIEW_ALL, Capability.PUBLISHING_MANAGE}
+        {
+            Capability.USERS_VIEW,
+            Capability.SUBMISSIONS_VIEW_ALL,
+            Capability.PUBLISHING_MANAGE,
+            Capability.SITE_MANAGE,
+        }
     ),
     Role.SECTION_EDITOR: frozenset(),
     Role.REVIEWER: frozenset(),

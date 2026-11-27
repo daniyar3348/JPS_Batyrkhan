@@ -22,6 +22,7 @@ import {
   IconChevronDown,
   IconClipboardList,
   IconDiscount,
+  IconFileDescription,
   IconFileText,
   IconForms,
   IconHome,
@@ -33,9 +34,11 @@ import {
   IconReceipt,
   IconSettings,
   IconSettings2,
+  IconSpeakerphone,
   IconStack2,
   IconUser,
   IconUsers,
+  IconWorld,
   IconWorldWww,
 } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
@@ -101,6 +104,27 @@ const PUBLISHING_NAV: NavItem[] = [
     label: "Publishing settings",
     icon: <IconSettings2 size={18} />,
     capability: "publishing.manage",
+  },
+];
+
+const SITE_NAV: NavItem[] = [
+  {
+    to: "/site/pages",
+    label: "Pages",
+    icon: <IconFileDescription size={18} />,
+    capability: "site.manage",
+  },
+  {
+    to: "/site/announcements",
+    label: "Announcements",
+    icon: <IconSpeakerphone size={18} />,
+    capability: "site.manage",
+  },
+  {
+    to: "/site/settings",
+    label: "Site settings",
+    icon: <IconWorld size={18} />,
+    capability: "site.manage",
   },
 ];
 
@@ -185,6 +209,7 @@ export function AppLayout() {
     (!item.capability || can(me, item.capability)) && (!item.visible || item.visible(me));
   const mainItems = MAIN_NAV.filter(allowed);
   const publishingItems = PUBLISHING_NAV.filter(allowed);
+  const siteItems = SITE_NAV.filter(allowed);
   const financeItems = FINANCE_NAV.filter(allowed);
   const adminItems = ADMIN_NAV.filter(allowed);
   const isActive = (item: NavItem) =>
@@ -269,6 +294,14 @@ export function AppLayout() {
                 Publishing
               </Text>
               <Stack gap={2}>{publishingItems.map(renderItem)}</Stack>
+            </>
+          ) : null}
+          {siteItems.length > 0 ? (
+            <>
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase" mt="lg" mb={6} px="sm">
+                Journal site
+              </Text>
+              <Stack gap={2}>{siteItems.map(renderItem)}</Stack>
             </>
           ) : null}
           {financeItems.length > 0 ? (

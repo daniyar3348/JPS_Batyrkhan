@@ -5,6 +5,8 @@
       "**",
       "!**/node_modules",
       "!**/dist",
+      "!**/next-env.d.ts",
+      "!**/.next",
       "!backend",
       "!**/openapi.json",
       "!**/*.md",
@@ -34,5 +36,17 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.css"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDescendingSpecificity": "off"
+          }
+        }
+      }
+    }
+  ]
 }

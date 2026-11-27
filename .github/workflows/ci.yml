@@ -42,7 +42,7 @@ jobs:
       - run: uv run pytest -q
 
   frontend:
-    name: Workspace (lint, types, tests, build)
+    name: Frontends (lint, types, tests) and workspace build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +55,20 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
+
+  site:
+    # Its types, lint and tests run with the workspace's (npm run check, npm test cover every package).
+    name: Journal site (build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Without an API, as in the Docker build: pages are built empty and rebuilt at run time.
+      - run: npm run build --workspace @jps/site
 
   api-client:
     name: API client matches the backend

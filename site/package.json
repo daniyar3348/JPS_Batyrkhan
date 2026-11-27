@@ -1,0 +1,29 @@
+{
+  "name": "@jps/site",
+  "private": true,
+  "version": "0.1.0",
+  "description": "The journal's public website: issues, articles, pages. Reads only the public API.",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "check": "tsc --noEmit && biome check .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jps/api-client": "^0.1.0",
+    "next": "15.5.29",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.9",
+    "@types/node": "^22.20.7",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.2"
+  }
+}

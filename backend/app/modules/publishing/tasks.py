@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.jobs import JobContext, task
+from app.core.site import REVALIDATE_SITE
 from app.modules.publishing.revalidate import SiteNotifier
-from app.modules.publishing.service import CHECK_DEPOSIT, DEPOSIT_DOI, REVALIDATE_SITE, PublishingService
+from app.modules.publishing.service import CHECK_DEPOSIT, DEPOSIT_DOI, PublishingService
 from app.modules.workflow.service import RESERVE_DOI
 
 

@@ -424,6 +424,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/journal/site-settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Site Settings
+     * @description The site's tagline, publication frequency and editorial board.
+     */
+    get: operations["get_site_settings"];
+    /** Update Site Settings */
+    put: operations["update_site_settings"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/audit-events": {
     parameters: {
       query?: never;
@@ -2208,6 +2229,88 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/site/pages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Pages */
+    get: operations["list_pages"];
+    put?: never;
+    /** Create Page */
+    post: operations["create_page"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/site/pages/{page_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Page */
+    get: operations["get_page"];
+    /**
+     * Update Page
+     * @description Replace the page. If-Match: its row_version.
+     */
+    put: operations["update_page"];
+    post?: never;
+    /** Delete Page */
+    delete: operations["delete_page"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/site/announcements": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Announcements
+     * @description Drafts first, then published announcements, newest first.
+     */
+    get: operations["list_announcements"];
+    put?: never;
+    /** Create Announcement */
+    post: operations["create_announcement"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/site/announcements/{announcement_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update Announcement
+     * @description Replace the announcement. If-Match: its row_version.
+     */
+    put: operations["update_announcement"];
+    post?: never;
+    /** Delete Announcement */
+    delete: operations["delete_announcement"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/public/v1/journal": {
     parameters: {
       query?: never;
@@ -2399,6 +2502,80 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/public/v1/pages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Public Pages
+     * @description Published pages in menu order (pages outside the menu are linked from elsewhere).
+     */
+    get: operations["list_public_pages"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/pages/{slug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Public Page */
+    get: operations["get_public_page"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/announcements": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Public Announcements
+     * @description Published announcements, newest first.
+     */
+    get: operations["list_public_announcements"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/public/v1/announcements/{announcement_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Public Announcement */
+    get: operations["get_public_announcement"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/oai": {
     parameters: {
       query?: never;
@@ -2485,6 +2662,46 @@ export interface components {
        */
       send_thanks: boolean;
       email?: components["schemas"]["EmailText"] | null;
+    };
+    /** AnnouncementIn */
+    AnnouncementIn: {
+      /** Title */
+      title: string;
+      /**
+       * Summary
+       * @default
+       */
+      summary: string;
+      /**
+       * Body
+       * @default
+       */
+      body: string;
+      /**
+       * Published
+       * @default false
+       */
+      published: boolean;
+    };
+    /** AnnouncementOut */
+    AnnouncementOut: {
+      /** Id */
+      id: number;
+      /** Title */
+      title: string;
+      /** Summary */
+      summary: string;
+      /** Body */
+      body: string;
+      /** Published At */
+      published_at: string | null;
+      /** Row Version */
+      row_version: number;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
     };
     /** ArticleOrderIn */
     ArticleOrderIn: {
@@ -2627,6 +2844,25 @@ export interface components {
       methods: components["schemas"]["MethodOption"][];
       bank_details: components["schemas"]["Payee"] | null;
     };
+    /** BoardMember */
+    BoardMember: {
+      /** Name */
+      name: string;
+      /** Role */
+      role: string;
+      /**
+       * Affiliation
+       * @default
+       */
+      affiliation: string;
+      /**
+       * Country
+       * @default
+       */
+      country: string;
+      /** Orcid */
+      orcid?: string | null;
+    };
     /** CancelIn */
     CancelIn: {
       /**
@@ -2648,7 +2884,8 @@ export interface components {
       | "submissions.create"
       | "submissions.view_all"
       | "payments.manage"
-      | "publishing.manage";
+      | "publishing.manage"
+      | "site.manage";
     /** ChangePasswordIn */
     ChangePasswordIn: {
       /** Current Password */
@@ -3670,6 +3907,57 @@ export interface components {
        */
       affiliation: string;
     };
+    /** PageIn */
+    PageIn: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string;
+      /**
+       * Body
+       * @default
+       */
+      body: string;
+      /**
+       * Position
+       * @default 0
+       */
+      position: number;
+      /**
+       * In Menu
+       * @default true
+       */
+      in_menu: boolean;
+      /**
+       * Is Published
+       * @default false
+       */
+      is_published: boolean;
+    };
+    /** PageOut */
+    PageOut: {
+      /** Id */
+      id: number;
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string;
+      /** Body */
+      body: string;
+      /** Position */
+      position: number;
+      /** In Menu */
+      in_menu: boolean;
+      /** Is Published */
+      is_published: boolean;
+      /** Row Version */
+      row_version: number;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
     /** Page[AuditEventOut] */
     Page_AuditEventOut_: {
       /** Items */
@@ -3975,6 +4263,22 @@ export interface components {
       /** Interests */
       interests?: string[] | null;
     };
+    /** PublicAnnouncement */
+    PublicAnnouncement: {
+      /** Id */
+      id: number;
+      /** Title */
+      title: string;
+      /** Summary */
+      summary: string;
+      /** Body */
+      body: string;
+      /**
+       * Published At
+       * Format: date-time
+       */
+      published_at: string;
+    };
     /** PublicArticle */
     PublicArticle: {
       /** Id */
@@ -4079,6 +4383,24 @@ export interface components {
       published: string;
       /** Updated */
       updated: string | null;
+    };
+    /**
+     * PublicFees
+     * @description The publication fee as authors see it before submitting (charged only after acceptance).
+     */
+    PublicFees: {
+      /** Charged */
+      charged: boolean;
+      /** Currency */
+      currency: string;
+      /** Amount */
+      amount: string;
+      /** Vat Percent */
+      vat_percent: string;
+      /** Section Fees */
+      section_fees: components["schemas"]["PublicSectionFee"][];
+      /** Waiver Policy */
+      waiver_policy: string;
     };
     /** PublicGalley */
     PublicGalley: {
@@ -4186,6 +4508,52 @@ export interface components {
       contact_email: string;
       /** Sections */
       sections: components["schemas"]["PublicSectionOut"][];
+      /**
+       * Tagline
+       * @default
+       */
+      tagline: string;
+      /**
+       * Publication Frequency
+       * @default
+       */
+      publication_frequency: string;
+      /** Editorial Board */
+      editorial_board: components["schemas"]["BoardMember"][];
+      /**
+       * Site Url
+       * @default
+       */
+      site_url: string;
+      /**
+       * License Url
+       * @default
+       */
+      license_url: string;
+      fees: components["schemas"]["PublicFees"] | null;
+    };
+    /** PublicPage */
+    PublicPage: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string;
+      /** Body */
+      body: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** PublicPageLink */
+    PublicPageLink: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string;
+      /** In Menu */
+      in_menu: boolean;
     };
     /** PublicSection */
     PublicSection: {
@@ -4193,6 +4561,15 @@ export interface components {
       id: number;
       /** Title */
       title: string;
+    };
+    /** PublicSectionFee */
+    PublicSectionFee: {
+      /** Section Id */
+      section_id: number;
+      /** Section Title */
+      section_title: string;
+      /** Amount */
+      amount: string;
     };
     /** PublicSectionOut */
     PublicSectionOut: {
@@ -4958,6 +5335,38 @@ export interface components {
        */
       threshold_percent: number;
     };
+    /** SiteSettings */
+    SiteSettings: {
+      /**
+       * Tagline
+       * @default
+       */
+      tagline: string;
+      /** Editorial Board */
+      editorial_board?: components["schemas"]["BoardMember"][];
+      /**
+       * Publication Frequency
+       * @default
+       */
+      publication_frequency: string;
+    };
+    /** SiteSettingsOut */
+    SiteSettingsOut: {
+      /**
+       * Tagline
+       * @default
+       */
+      tagline: string;
+      /** Editorial Board */
+      editorial_board: components["schemas"]["BoardMember"][];
+      /**
+       * Publication Frequency
+       * @default
+       */
+      publication_frequency: string;
+      /** Version */
+      version: number;
+    };
     /** SubmissionCreate */
     SubmissionCreate: {
       /** Section Id */
@@ -5430,12 +5839,15 @@ export interface components {
 }
 export type AcceptIn = components["schemas"]["AcceptIn"];
 export type AcknowledgeIn = components["schemas"]["AcknowledgeIn"];
+export type AnnouncementIn = components["schemas"]["AnnouncementIn"];
+export type AnnouncementOut = components["schemas"]["AnnouncementOut"];
 export type ArticleOrderIn = components["schemas"]["ArticleOrderIn"];
 export type AssignmentOut = components["schemas"]["AssignmentOut"];
 export type AuditEventOut = components["schemas"]["AuditEventOut"];
 export type AuthorAnswer = components["schemas"]["AuthorAnswer"];
 export type AuthorReviewOut = components["schemas"]["AuthorReviewOut"];
 export type BillingOut = components["schemas"]["BillingOut"];
+export type BoardMember = components["schemas"]["BoardMember"];
 export type CancelIn = components["schemas"]["CancelIn"];
 export type Capability = components["schemas"]["Capability"];
 export type ChangePasswordIn = components["schemas"]["ChangePasswordIn"];
@@ -5500,6 +5912,8 @@ export type MethodAvailability = components["schemas"]["MethodAvailability"];
 export type MethodOption = components["schemas"]["MethodOption"];
 export type Methods = components["schemas"]["Methods"];
 export type NewReviewer = components["schemas"]["NewReviewer"];
+export type PageIn = components["schemas"]["PageIn"];
+export type PageOut = components["schemas"]["PageOut"];
 export type PageAuditEventOut = components["schemas"]["Page_AuditEventOut_"];
 export type PageMemberOut = components["schemas"]["Page_MemberOut_"];
 export type PagePublicArticleSummary = components["schemas"]["Page_PublicArticleSummary_"];
@@ -5514,17 +5928,22 @@ export type PaymentStatusOut = components["schemas"]["PaymentStatusOut"];
 export type Person = components["schemas"]["Person"];
 export type Problem = components["schemas"]["Problem"];
 export type ProfileUpdate = components["schemas"]["ProfileUpdate"];
+export type PublicAnnouncement = components["schemas"]["PublicAnnouncement"];
 export type PublicArticle = components["schemas"]["PublicArticle"];
 export type PublicArticleSummary = components["schemas"]["PublicArticleSummary"];
 export type PublicAuthor = components["schemas"]["PublicAuthor"];
 export type PublicDates = components["schemas"]["PublicDates"];
+export type PublicFees = components["schemas"]["PublicFees"];
 export type PublicGalley = components["schemas"]["PublicGalley"];
 export type PublicIssue = components["schemas"]["PublicIssue"];
 export type PublicIssueDetail = components["schemas"]["PublicIssueDetail"];
 export type PublicIssueRef = components["schemas"]["PublicIssueRef"];
 export type PublicIssueSection = components["schemas"]["PublicIssueSection"];
 export type PublicJournalOut = components["schemas"]["PublicJournalOut"];
+export type PublicPage = components["schemas"]["PublicPage"];
+export type PublicPageLink = components["schemas"]["PublicPageLink"];
 export type PublicSection = components["schemas"]["PublicSection"];
+export type PublicSectionFee = components["schemas"]["PublicSectionFee"];
 export type PublicSectionOut = components["schemas"]["PublicSectionOut"];
 export type PublicVersion = components["schemas"]["PublicVersion"];
 export type PublicationInfo = components["schemas"]["PublicationInfo"];
@@ -5564,6 +5983,8 @@ export type SectionRef = components["schemas"]["SectionRef"];
 export type SectionUpdate = components["schemas"]["SectionUpdate"];
 export type SimilarityCheckOut = components["schemas"]["SimilarityCheckOut"];
 export type SimilaritySettings = components["schemas"]["SimilaritySettings"];
+export type SiteSettings = components["schemas"]["SiteSettings"];
+export type SiteSettingsOut = components["schemas"]["SiteSettingsOut"];
 export type SubmissionCreate = components["schemas"]["SubmissionCreate"];
 export type SubmissionOut = components["schemas"]["SubmissionOut"];
 export type SubmissionSettings = components["schemas"]["SubmissionSettings"];
@@ -9119,6 +9540,232 @@ export interface operations {
         };
         content: {
           "application/json": unknown;
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  get_site_settings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SiteSettingsOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  update_site_settings: {
+    parameters: {
+      query?: never;
+      header?: {
+        "if-match"?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SiteSettings"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SiteSettingsOut"];
         };
       };
       /** @description Bad request */
@@ -21760,6 +22407,1022 @@ export interface operations {
       };
     };
   };
+  list_pages: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PageOut"][];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  create_page: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PageIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PageOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  get_page: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        page_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PageOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  update_page: {
+    parameters: {
+      query?: never;
+      header?: {
+        "if-match"?: string | null;
+      };
+      path: {
+        page_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PageIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PageOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  delete_page: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        page_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  list_announcements: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementOut"][];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  create_announcement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnnouncementIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  update_announcement: {
+    parameters: {
+      query?: never;
+      header?: {
+        "if-match"?: string | null;
+      };
+      path: {
+        announcement_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnnouncementIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementOut"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  delete_announcement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        announcement_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   get_public_journal: {
     parameters: {
       query?: never;
@@ -22875,6 +24538,452 @@ export interface operations {
       };
     };
   };
+  list_public_pages: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicPageLink"][];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  get_public_page: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicPage"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  list_public_announcements: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicAnnouncement"][];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
+  get_public_announcement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        announcement_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicAnnouncement"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Changed by someone else */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Invalid input */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description If-Match required */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+      /** @description Journal not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Problem"];
+        };
+      };
+    };
+  };
   oai_get: {
     parameters: {
       query?: never;
@@ -23001,6 +25110,7 @@ export const capabilityValues: ReadonlyArray<FlattenedDeepRequired<components>["
   "submissions.view_all",
   "payments.manage",
   "publishing.manage",
+  "site.manage",
 ];
 export const checkoutInMethodValues: ReadonlyArray<
   FlattenedDeepRequired<components>["schemas"]["CheckoutIn"]["method"]

@@ -6,6 +6,7 @@ WORKDIR /src
 COPY package.json package-lock.json ./
 COPY packages/api-client/package.json packages/api-client/
 COPY workspace/package.json workspace/
+COPY site/package.json site/
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
 COPY biome.json ./

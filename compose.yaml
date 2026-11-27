@@ -3,7 +3,8 @@
 #   docker compose up --build
 #   docker compose run --rm api python -m app.cli seed-demo
 #
-# Workspace: http://localhost:8080   ·   E-mails (Mailpit): http://localhost:8025   ·   API docs: http://localhost:8080/api/docs
+# Workspace: http://localhost:8080   ·   Journal site: http://localhost:3000
+# E-mails (Mailpit): http://localhost:8025   ·   API docs: http://localhost:8080/api/docs
 #
 # Production uses the same images with real secrets, TLS and backups (stage 7).
 
@@ -32,6 +33,9 @@ x-backend: &backend
     JPS_PAYMENTS_TEST_PROVIDER: "true"
     # DOIs are assigned and "registered" without contacting Crossref, so publishing can be tried end to end.
     JPS_CROSSREF_MODE: fake
+    # The journal site rebuilds pages when told; the secret must match JPS_REVALIDATE_SECRET there.
+    JPS_SITE_REVALIDATE_URL: http://site:3000/api/revalidate
+    JPS_SITE_REVALIDATE_SECRET: development-only-site-secret
   volumes:
     - file-data:/app/var/storage
   depends_on:
@@ -92,6 +96,25 @@ services:
       - "8080:80"
     depends_on:
       - api
+
+  # The journal's public site. It reads the public API inside the network; readers' downloads of files
+  # in local storage go through the workspace's nginx (production: S3 links).
+  site:
+    build:
+      context: .
+      dockerfile: site/Dockerfile
+    restart: unless-stopped
+    environment:
+      JPS_API_URL: http://api:8000
+      JPS_PUBLIC_API_URL: http://localhost:8080
+      JPS_SITE_URL: http://localhost:3000
+      JPS_WORKSPACE_URL: http://localhost:8080
+      JPS_REVALIDATE_SECRET: development-only-site-secret
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   db-data:

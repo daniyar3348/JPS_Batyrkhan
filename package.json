@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "workspace"
+    "workspace",
+    "site"
   ],
   "engines": {
     "node": ">=22.22"
@@ -13,6 +14,13 @@
     "dev": "npm run dev --workspace @jps/workspace",
     "build": "npm run build --workspace @jps/workspace",
     "check": "npm run check --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "dev:site": "npm run dev --workspace @jps/site",
+    "build:site": "npm run build --workspace @jps/site"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "^8.5.33"
+    }
   }
 }

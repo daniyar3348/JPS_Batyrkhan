@@ -12,6 +12,8 @@ from app.core.deps import get_db
 from app.core.errors import Problem
 from app.core.storage_routes import router as storage_router
 from app.modules.audit.router import router as audit_router
+from app.modules.content.router import public_router as content_public_router
+from app.modules.content.router import router as content_router
 from app.modules.identity.router import router as identity_router
 from app.modules.journals.deps import get_current_journal
 from app.modules.journals.models import Journal
@@ -55,6 +57,7 @@ def build_router() -> APIRouter:
     workspace.include_router(workflow_router)
     workspace.include_router(payments_router)
     workspace.include_router(publishing_router)
+    workspace.include_router(content_router)
     # Provider notifications and the test payment page: no session, signatures instead.
     workspace.include_router(payment_webhooks)
     root.include_router(workspace)
@@ -62,6 +65,7 @@ def build_router() -> APIRouter:
     public = APIRouter(prefix="/public/v1", responses=_ERRORS)
     public.include_router(journals_public_router)
     public.include_router(publishing_public_router)
+    public.include_router(content_public_router)
     root.include_router(public)
     root.include_router(oai_router)
 

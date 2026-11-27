@@ -142,6 +142,38 @@ export const router = createBrowserRouter([
         ],
       },
       {
+        // The public site's pages, announcements, tagline and editorial board.
+        path: "site",
+        element: <CapabilityOutlet />,
+        children: [
+          {
+            path: "pages",
+            handle: requires("site.manage"),
+            lazy: async () => ({ Component: (await import("./site/SitePagesPage")).SitePagesPage }),
+          },
+          {
+            path: "pages/new",
+            handle: requires("site.manage"),
+            lazy: async () => ({ Component: (await import("./site/SitePageEditor")).SitePageEditor }),
+          },
+          {
+            path: "pages/:id",
+            handle: requires("site.manage"),
+            lazy: async () => ({ Component: (await import("./site/SitePageEditor")).SitePageEditor }),
+          },
+          {
+            path: "announcements",
+            handle: requires("site.manage"),
+            lazy: async () => ({ Component: (await import("./site/AnnouncementsPage")).AnnouncementsPage }),
+          },
+          {
+            path: "settings",
+            handle: requires("site.manage"),
+            lazy: async () => ({ Component: (await import("./site/SiteSettingsPage")).SiteSettingsPage }),
+          },
+        ],
+      },
+      {
         path: "editorial",
         lazy: async () => ({
           Component: (await import("./submissions/EditorialQueuePage")).EditorialQueuePage,

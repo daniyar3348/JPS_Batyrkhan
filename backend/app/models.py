@@ -3,6 +3,7 @@
 from app.core.db import Base
 from app.core.jobs import Job, PeriodicRun
 from app.modules.audit.models import AuditEvent
+from app.modules.content.models import Announcement, Page
 from app.modules.files.models import FileRevision, SubmissionFile
 from app.modules.identity.models import AuthSession, Consent, User, UserToken
 from app.modules.journals.models import EmailTemplate, Journal, Section, SectionEditor, UserRole
@@ -34,6 +35,7 @@ from app.modules.workflow.models import (
 )
 
 __all__ = [
+    "Announcement",
     "AuditEvent",
     "AuthSession",
     "Base",
@@ -54,6 +56,7 @@ __all__ = [
     "Issue",
     "Job",
     "Journal",
+    "Page",
     "Participant",
     "Payment",
     "PeriodicRun",

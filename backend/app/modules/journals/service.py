@@ -13,6 +13,7 @@ from app.core.config import Settings
 from app.core.db import escape_like
 from app.core.errors import Conflict, FieldError, NotFound, ServiceUnavailable, ValidationFailed
 from app.core.pagination import decode_cursor, encode_cursor
+from app.core.site import EVERYTHING, request_revalidation
 from app.modules.audit.service import AuditService
 from app.modules.identity.models import User
 from app.modules.identity.schemas import RegisterIn
@@ -23,6 +24,7 @@ from app.modules.journals.permissions import ROLE_LABELS, SECTION_EDITOR_ROLES, 
 from app.modules.journals.publishing_settings import PublishingSettings, publishing_settings
 from app.modules.journals.review_settings import ReviewSettings, review_settings
 from app.modules.journals.schemas import InviteIn, JournalUpdate, SectionCreate, SectionUpdate
+from app.modules.journals.site_settings import SiteSettings, site_settings
 from app.modules.journals.submission_settings import SubmissionSettings, submission_settings
 
 
@@ -74,6 +76,8 @@ class JournalService:
         for field, value in changed.items():
             setattr(journal, field, value)
         await self.db.flush()
+        # The name, ISSN and contacts are on every page of the site.
+        await request_revalidation(self.db, self.settings, [EVERYTHING])
         await self.audit.record(
             "journal.updated",
             "journal",
@@ -112,12 +116,20 @@ class JournalService:
         await self._save_settings(journal, "publishing", before, data, expected_version, actor)
         return data
 
+    async def update_site_settings(
+        self, journal: Journal, data: SiteSettings, *, expected_version: int, actor: User
+    ) -> SiteSettings:
+        before = site_settings(journal)
+        await self._save_settings(journal, "site", before, data, expected_version, actor)
+        await request_revalidation(self.db, self.settings, [EVERYTHING])
+        return data
+
     async def _save_settings(
         self,
         journal: Journal,
         name: str,
-        before: SubmissionSettings | ReviewSettings | PaymentSettings | PublishingSettings,
-        data: SubmissionSettings | ReviewSettings | PaymentSettings | PublishingSettings,
+        before: SubmissionSettings | ReviewSettings | PaymentSettings | PublishingSettings | SiteSettings,
+        data: SubmissionSettings | ReviewSettings | PaymentSettings | PublishingSettings | SiteSettings,
         expected_version: int,
         actor: User,
     ) -> None:
@@ -373,6 +385,7 @@ class JournalService:
         section.editors = []
         self.db.add(section)
         await self._flush_section()
+        await request_revalidation(self.db, self.settings, [EVERYTHING])
         await self.audit.record(
             "section.created",
             "section",
@@ -399,6 +412,7 @@ class JournalService:
         for field, value in changed.items():
             setattr(section, field, value)
         await self._flush_section()
+        await request_revalidation(self.db, self.settings, [EVERYTHING])
         await self.audit.record(
             "section.updated",
             "section",

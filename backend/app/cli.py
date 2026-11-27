@@ -15,13 +15,23 @@ import os
 import sys
 from pathlib import Path
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import models, tasks  # noqa: F401 - the whole schema, and the tasks services enqueue
 from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_session_factory
 from app.core.security import configure_password_hashing
+from app.modules.content.defaults import add_starter_pages
+from app.modules.content.schemas import AnnouncementIn
+from app.modules.content.service import ContentService
+from app.modules.identity.models import User
 from app.modules.identity.service import IdentityService
+from app.modules.journals.models import Journal
 from app.modules.journals.permissions import Role
+from app.modules.journals.publishing_settings import DoiSettings, PublishingSettings, publishing_settings
 from app.modules.journals.schemas import SectionCreate
 from app.modules.journals.service import JournalService
+from app.modules.journals.site_settings import BoardMember, SiteSettings, site_settings
 
 DEMO_PASSWORD = "demo-password-2026"  # noqa: S105 - development-only demo accounts
 DEMO_USERS = [
@@ -58,6 +68,9 @@ async def bootstrap(args: argparse.Namespace) -> None:
             journals = JournalService(db, settings)
             journal, created = await journals.bootstrap(slug=settings.journal_slug, name=args.journal_name)
             print(f"Journal '{journal.name}' ({journal.slug}): {'created' if created else 'already exists'}")
+            drafts = await add_starter_pages(ContentService(db, settings), journal, published=False)
+            if drafts:
+                print(f"Site pages: {drafts} drafts to fill in (Site pages in the workspace)")
             if args.admin_email:
                 identity = IdentityService(db, settings)
                 admin = await identity.get_by_email(args.admin_email)
@@ -115,12 +128,84 @@ async def seed_demo(args: argparse.Namespace) -> None:
             for section in DEMO_SECTIONS:
                 if section.abbreviation not in existing:
                     await journals.create_section(journal, section, actor=admin)
+            await _seed_site(db, settings, journals, journal, admin, site_url=args.site_url)
             await db.commit()
         print(f"Demo data ready. Accounts ({DEMO_PASSWORD}):")
         for email, _, _, roles in DEMO_USERS:
             print(f"  {email:24} {', '.join(roles)}")
     finally:
         await engine.dispose()
+
+
+async def _seed_site(
+    db: AsyncSession,
+    settings: Settings,
+    journals: JournalService,
+    journal: Journal,
+    admin: User,
+    *,
+    site_url: str,
+) -> None:
+    """Pages, an announcement, an editorial board and demo DOIs, so the public site has something to show."""
+    if not publishing_settings(journal).site_url:
+        demo = PublishingSettings(
+            site_url=site_url,
+            doi=DoiSettings(
+                enabled=True,
+                prefix="10.99999",  # not a real prefix: with JPS_CROSSREF_MODE=fake nothing is registered
+                depositor_name="Demo Journal office",
+                depositor_email="office@example.org",
+            ),
+        )
+        await journals.update_publishing_settings(
+            journal, demo, expected_version=journal.version, actor=admin
+        )
+    content = ContentService(db, settings)
+    await add_starter_pages(content, journal, published=True)
+    if not await content.announcements(journal, published_only=False, limit=1):
+        await content.create_announcement(
+            journal,
+            AnnouncementIn(
+                title="Call for papers: first issue",
+                summary="The journal welcomes submissions for its first issue.",
+                body="We invite original research and reviews for our first issue. "
+                "There is no fee to submit; see the author guidelines.",
+                published=True,
+            ),
+            admin,
+        )
+    if not site_settings(journal).editorial_board:
+        board = SiteSettings(
+            tagline="Open-access research in applied science",
+            publication_frequency="Two issues a year, with articles published as soon as they are ready.",
+            editorial_board=[
+                BoardMember(
+                    name="Daniyar Chief",
+                    role="Editor-in-Chief",
+                    affiliation="Demo University",
+                    country="Kazakhstan",
+                ),
+                BoardMember(
+                    name="Elena Editor",
+                    role="Section Editor",
+                    affiliation="Demo University",
+                    country="Kazakhstan",
+                ),
+                BoardMember(
+                    name="Ruslan Reviewer",
+                    role="Editorial Board Member",
+                    affiliation="Example Institute",
+                    country="Uzbekistan",
+                ),
+            ],
+        )
+        await journals.update_site_settings(journal, board, expected_version=journal.version, actor=admin)
+    if not journal.description:
+        journal.description = (
+            "A peer-reviewed open-access journal for applied research. A demonstration journal: "
+            "its articles and people are made up."
+        )
+        await db.flush()
 
 
 def openapi(args: argparse.Namespace) -> None:
@@ -147,6 +232,11 @@ def main() -> None:
     boot.set_defaults(handler=lambda a: asyncio.run(bootstrap(a)))
 
     demo = commands.add_parser("seed-demo", help="Create demo accounts and sections (not in production)")
+    demo.add_argument(
+        "--site-url",
+        default=os.environ.get("JPS_DEMO_SITE_URL", "http://localhost:3000"),
+        help="Address of the journal's public site (article links, Crossref and OAI-PMH use it)",
+    )
     demo.set_defaults(handler=lambda a: asyncio.run(seed_demo(a)))
 
     spec = commands.add_parser("openapi", help="Write the OpenAPI schema to a file")
